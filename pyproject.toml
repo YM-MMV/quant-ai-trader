@@ -52,6 +52,13 @@ openbb = [
 quantdinger = [
     "requests>=2.31",
 ]
+# WorldMonitor integration (M25). Optional macro/news risk *context* only —
+# never a trading signal, and disabled by default. The real client talks HTTP
+# via `requests`. Tests use the disabled/mock client or an injected session, so
+# it is not needed for CI. Install with `pip install -e .[worldmonitor]`.
+worldmonitor = [
+    "requests>=2.31",
+]
 
 [tool.setuptools.packages.find]
 # Python packages live under apps/ and services/. Data directories
