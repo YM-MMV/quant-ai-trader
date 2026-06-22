@@ -22,6 +22,17 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+    # The API test suite (tests/test_api.py) needs FastAPI + an HTTP client for
+    # Starlette's TestClient. tests/test_api.py skips itself if these are absent.
+    "fastapi>=0.110",
+    "httpx>=0.27",
+    "uvicorn>=0.27",
+]
+# FastAPI backend (M20). Local, paper-only API. Install with
+# `pip install -e .[api]`, then `uvicorn apps.api.main:app`.
+api = [
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
 ]
 # MetaTrader 5 data collection (M14). Windows-only; talks to a local terminal.
 # Install with `pip install -e .[mt5]` on the data-collection machine. Tests
