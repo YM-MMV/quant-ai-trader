@@ -1,0 +1,16 @@
+# timeframes.yaml — supported chart timeframes and their durations.
+#
+# `default` is used when a caller does not specify one and must appear in
+# `supported`. Minute durations let services convert between timeframes
+# without hardcoding magic numbers.
+
+default: H1
+
+supported:
+  M1:  {minutes: 1}
+  M5:  {minutes: 5}
+  M15: {minutes: 15}
+  M30: {minutes: 30}
+  H1:  {minutes: 60}
+  H4:  {minutes: 240}
+  D1:  {minutes: 1440}

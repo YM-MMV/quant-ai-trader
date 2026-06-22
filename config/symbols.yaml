@@ -1,0 +1,37 @@
+# symbols.yaml — canonical symbols and broker-specific name mappings.
+#
+# Broker symbol names vary (EURUSD, EURUSD., EURUSDm, XAUUSD, GOLD, BTCUSD,
+# BTCUSDm). Internal code always uses the canonical key; the gateway translates
+# to a broker alias. `allowlist` is the set tradable by default (see SAFETY.md);
+# every entry must exist in `symbols`.
+
+symbols:
+  EURUSD:
+    asset_class: forex
+    broker_aliases: [EURUSD, "EURUSD.", EURUSDm]
+    digits: 5
+    point: 0.00001
+    enabled: true
+  GBPUSD:
+    asset_class: forex
+    broker_aliases: [GBPUSD, "GBPUSD.", GBPUSDm]
+    digits: 5
+    point: 0.00001
+    enabled: true
+  XAUUSD:
+    asset_class: metal
+    broker_aliases: [XAUUSD, GOLD, "XAUUSD."]
+    digits: 2
+    point: 0.01
+    enabled: true
+  BTCUSD:
+    asset_class: crypto
+    broker_aliases: [BTCUSD, BTCUSDm]
+    digits: 2
+    point: 0.01
+    enabled: false   # only enable if the broker actually provides it
+
+allowlist:
+  - EURUSD
+  - GBPUSD
+  - XAUUSD

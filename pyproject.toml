@@ -9,20 +9,27 @@ description = "Paper-first, risk-controlled quantitative trading AI research sys
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
-dependencies = []
+dependencies = [
+    "pydantic>=2.5",
+    "pydantic-settings>=2.1",
+    "pyyaml>=6.0",
+]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
 ]
 
-[tool.setuptools]
-# No packages yet; populated as the system is built out (see PLAN.md).
-packages = []
+[tool.setuptools.packages.find]
+# Python packages live under apps/ and services/. Data directories
+# (data/, strategies/, research/, external/, config/) are intentionally
+# excluded — they hold artifacts/config, not importable code.
+include = ["apps*", "services*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
-# Allow the suite to pass when no tests exist yet (M0).
-# Exit code 5 (no tests collected) is treated as success.
 python_files = ["test_*.py"]
+# Put the project root on sys.path so tests import `services`/`apps`
+# without requiring an editable install.
+pythonpath = ["."]
