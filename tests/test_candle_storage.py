@@ -109,7 +109,15 @@ def test_load_missing_raises(tmp_path):
         store.load("EURUSD", "M15")
 
 
-def test_unsafe_symbol_rejected(tmp_path):
+@pytest.mark.parametrize("bad", ["../etc", "..", ".", "a/b", "a\\b", "", "a b"])
+def test_unsafe_symbol_rejected(tmp_path, bad):
     store = CandleStore(tmp_path)
     with pytest.raises(ValueError):
-        store.path_for("../etc", "M15")
+        store.path_for(bad, "M15")
+
+
+@pytest.mark.parametrize("bad", ["..", ".", "../x"])
+def test_unsafe_timeframe_rejected(tmp_path, bad):
+    store = CandleStore(tmp_path)
+    with pytest.raises(ValueError):
+        store.path_for("EURUSD", bad)

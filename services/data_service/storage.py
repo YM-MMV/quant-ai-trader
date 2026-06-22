@@ -45,6 +45,9 @@ class CandleSchemaError(ValueError):
 def _check_segment(name: str, kind: str) -> str:
     if not name or not _SAFE_SEGMENT.match(name):
         raise ValueError(f"unsafe {kind} {name!r}: must match [A-Za-z0-9._-]+")
+    # "." and ".." pass the charset check but are path-traversal segments.
+    if set(name) == {"."}:
+        raise ValueError(f"unsafe {kind} {name!r}: dot-only segment not allowed")
     return name
 
 
