@@ -1,0 +1,4 @@
+# Kronos prediction artifacts are runtime output; keep the dir, ignore the data.
+*.jsonl
+*.json
+!.gitkeep

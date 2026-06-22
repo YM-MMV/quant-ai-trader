@@ -13,12 +13,30 @@ from services.kronos_service.base import (
     PredDirection,
 )
 from services.kronos_service.mock_kronos import MockKronos
+from services.kronos_service.real_kronos import (
+    DisabledKronos,
+    KronosDisabledError,
+    KronosUnavailableError,
+    RealKronos,
+    kronos_available,
+    load_kronos,
+    load_predictions,
+    save_prediction,
+)
 
 __all__ = [
     "KronosPrediction",
     "KronosPredictor",
     "PredDirection",
     "MockKronos",
+    "RealKronos",
+    "DisabledKronos",
+    "load_kronos",
+    "kronos_available",
+    "save_prediction",
+    "load_predictions",
+    "KronosUnavailableError",
+    "KronosDisabledError",
     "DEFAULT_LOOKBACK",
     "DEFAULT_PRED_LEN",
 ]
