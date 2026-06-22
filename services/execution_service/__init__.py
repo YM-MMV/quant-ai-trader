@@ -24,6 +24,14 @@ from services.execution_service.base_gateway import (
     approval_problem,
 )
 from services.execution_service.mock_mt5_gateway import MockMT5Gateway
+from services.execution_service.mt5_gateway import (
+    LIVE_LOCKS,
+    LiveTradingDisabledError,
+    MT5ConnectionError,
+    MT5Gateway,
+    MT5GatewayError,
+    MT5NotAvailableError,
+)
 from services.execution_service.paper_execution import PaperExecutionService
 from services.execution_service.trade_log import PaperTrade, TradeLogStore
 
@@ -36,6 +44,12 @@ __all__ = [
     "AuditEventType",
     "ExecutionGateway",
     "MockMT5Gateway",
+    "MT5Gateway",
+    "LIVE_LOCKS",
+    "LiveTradingDisabledError",
+    "MT5GatewayError",
+    "MT5NotAvailableError",
+    "MT5ConnectionError",
     "AccountInfo",
     "Quote",
     "Position",
