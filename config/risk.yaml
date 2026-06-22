@@ -15,3 +15,8 @@ max_risk_per_trade_pct: 1.0   # % of equity riskable on a single trade
 max_total_exposure_pct: 5.0   # % of equity across all open trades
 
 kill_switch_enabled: true     # master switch able to halt all execution
+
+# Allowed trading modes (live excluded by default — see SAFETY.md live lock).
+allowed_modes: [research, backtest, paper, mt5_demo]
+max_trades_per_day: 10        # cap on new entries opened within a single day
+max_volatility: null          # optional volatility ceiling (e.g. ATR); null = disabled
