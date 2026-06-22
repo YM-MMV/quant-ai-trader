@@ -35,6 +35,12 @@ mt5 = [
 openbb = [
     "openbb>=4.0",
 ]
+# QuantDinger integration (M18). Optional external backtest platform; the real
+# client talks HTTP via `requests`. Tests use the mock / an injected session, so
+# it is not needed for CI. Install with `pip install -e .[quantdinger]`.
+quantdinger = [
+    "requests>=2.31",
+]
 
 [tool.setuptools.packages.find]
 # Python packages live under apps/ and services/. Data directories
