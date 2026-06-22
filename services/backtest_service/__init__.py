@@ -28,6 +28,19 @@ from services.backtest_service.strategy_validator import (
     build_validation_input,
     load_validation_config,
 )
+from services.backtest_service.quantdinger_client import (
+    BacktestJob,
+    BacktestResult,
+    DisabledQuantDinger,
+    MockQuantDinger,
+    PaperDeployment,
+    PaperTradingLogs,
+    QuantDingerClient,
+    QuantDingerError,
+    RealQuantDinger,
+    StrategyRef,
+    load_quantdinger,
+)
 
 __all__ = [
     "CostModel",
@@ -50,4 +63,15 @@ __all__ = [
     "ApprovalRecord",
     "load_validation_config",
     "build_validation_input",
+    "QuantDingerClient",
+    "MockQuantDinger",
+    "RealQuantDinger",
+    "DisabledQuantDinger",
+    "load_quantdinger",
+    "StrategyRef",
+    "BacktestJob",
+    "BacktestResult",
+    "PaperDeployment",
+    "PaperTradingLogs",
+    "QuantDingerError",
 ]

@@ -60,6 +60,23 @@ AI Agent → Market Data → Feature Engineering → Strategy Inventory/Adapters
   MCP setup for source-code intelligence (optional dev tool)
 - [`docs/STRATEGY_INVENTORY.md`](docs/STRATEGY_INVENTORY.md) — quant-trading
   strategy inventory JSON format and classification process
+- [`docs/QUANTDINGER_SETUP.md`](docs/QUANTDINGER_SETUP.md) — QuantDinger client
+  (**optional** external backtest platform) vs the local backtester
+
+## Backtesting: local engine vs QuantDinger
+
+The project's own [`SimpleBacktester`](services/backtest_service/simple_backtester.py)
+is the **primary, always-available** engine: in-process, no network, and
+byte-for-byte reproducible with realistic friction. It powers the validation and
+approval gate.
+
+[QuantDinger](https://github.com/brokermr810/QuantDinger) is integrated as an
+**optional** external platform behind a thin client
+([`quantdinger_client.py`](services/backtest_service/quantdinger_client.py)). It
+is never required: with no server configured (and in all tests) it defaults to a
+deterministic in-memory mock. Use it only when you specifically want that
+platform's engine — it is an alternative remote backtester, not a replacement.
+See [`docs/QUANTDINGER_SETUP.md`](docs/QUANTDINGER_SETUP.md).
 
 ## Getting started (development)
 
