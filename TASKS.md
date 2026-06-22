@@ -56,7 +56,7 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] `tests/test_codebase_memory_docs.py` — presence/content checks
 - Binary is optional; not required for tests/CI. Realigned `PLAN.md` numbering.
 
-## M4 — Candle storage (Parquet + DuckDB) (current)
+## M4 — Candle storage (Parquet + DuckDB)
 
 - [x] `services/data_service/sample_data.py` — deterministic fake candles
       (canonical 11-column schema; no MT5/OpenBB)
@@ -68,7 +68,22 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] `pytest` passes (save EURUSD M15; query last 500; query date range)
 - Deps added: pandas, pyarrow, duckdb. Raw history never fed to the LLM.
 
+## M6 — Strategy inventory scanner (current)
+
+- [x] `services/strategy_service/strategy_classifier.py` — static name-based
+      MT5-applicability knowledge base (`classify`); unknown → research_only
+- [x] `services/strategy_service/inventory_scanner.py` — static scan of a
+      quant-trading checkout → typed `InventoryItem`s (no import/exec of code)
+- [x] `strategies/inventory/quant_trading_inventory.json` — curated baseline
+      (17 items; "Ore Money Project" in KB, omitted from baseline)
+- [x] `docs/STRATEGY_INVENTORY.md` — JSON schema + process documented; README links
+- [x] `tests/test_strategy_classifier.py`, `tests/test_strategy_inventory_scanner.py`
+- [x] Tests use fixtures only; verified scanner never executes/imports scripts
+- [x] `pytest` passes
+
+> Note: M5 (Feature engineering) is implemented and in review as PR #7.
+
 ## Next up
 
-- [ ] M5 — Feature engineering
-- [ ] M6 — Strategy inventory & classification
+- [ ] M7 — Strategy adapters
+- [ ] M8 — Backtest service

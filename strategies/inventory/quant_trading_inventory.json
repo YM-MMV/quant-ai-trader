@@ -1,0 +1,323 @@
+{
+  "repo_url": "https://github.com/je-suis-tm/quant-trading",
+  "count": 17,
+  "items": [
+    {
+      "name": "Awesome Oscillator",
+      "source_file_or_folder": "Awesome Oscillator",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/Awesome Oscillator",
+      "category": "technical_indicator",
+      "description": "Bill Williams Awesome Oscillator (median-price momentum).",
+      "required_data": [
+        "OHLC candles"
+      ],
+      "supported_asset_classes": [
+        "forex",
+        "metal",
+        "crypto"
+      ],
+      "mt5_applicability": "direct",
+      "reason_for_applicability": "Pure OHLC indicator; directly applicable.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "Bollinger Bands Pattern Recognition",
+      "source_file_or_folder": "Bollinger Bands Pattern Recognition",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/Bollinger Bands Pattern Recognition",
+      "category": "technical_indicator",
+      "description": "Pattern recognition on Bollinger Bands (squeeze/breakout shapes).",
+      "required_data": [
+        "OHLC candles"
+      ],
+      "supported_asset_classes": [
+        "forex",
+        "metal",
+        "crypto"
+      ],
+      "mt5_applicability": "direct",
+      "reason_for_applicability": "Built from OHLC + Bollinger Bands; directly applicable.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "Dual Thrust",
+      "source_file_or_folder": "Dual Thrust",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/Dual Thrust",
+      "category": "breakout",
+      "description": "Range-based intraday breakout using prior highs/lows.",
+      "required_data": [
+        "OHLC candles"
+      ],
+      "supported_asset_classes": [
+        "forex",
+        "metal",
+        "crypto"
+      ],
+      "mt5_applicability": "direct",
+      "reason_for_applicability": "OHLC-only breakout logic; runs directly on our instruments.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "Heikin-Ashi",
+      "source_file_or_folder": "Heikin-Ashi",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/Heikin-Ashi",
+      "category": "candlestick_pattern",
+      "description": "Heikin-Ashi smoothed candles for trend clarity.",
+      "required_data": [
+        "OHLC candles"
+      ],
+      "supported_asset_classes": [
+        "forex",
+        "metal",
+        "crypto"
+      ],
+      "mt5_applicability": "direct",
+      "reason_for_applicability": "Deterministic transform of OHLC; applies directly to our instruments.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "London Breakout",
+      "source_file_or_folder": "London Breakout",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/London Breakout",
+      "category": "breakout",
+      "description": "Trades the breakout of the pre-London session range.",
+      "required_data": [
+        "OHLC candles"
+      ],
+      "supported_asset_classes": [
+        "forex",
+        "metal"
+      ],
+      "mt5_applicability": "direct",
+      "reason_for_applicability": "Intraday FX session strategy; a natural fit for MT5 forex/gold.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "MACD Oscillator",
+      "source_file_or_folder": "MACD Oscillator",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/MACD Oscillator",
+      "category": "technical_indicator",
+      "description": "Moving Average Convergence Divergence trend/momentum oscillator.",
+      "required_data": [
+        "OHLC candles"
+      ],
+      "supported_asset_classes": [
+        "forex",
+        "metal",
+        "crypto"
+      ],
+      "mt5_applicability": "direct",
+      "reason_for_applicability": "Pure OHLC indicator; computable and tradable directly on FX/metal/crypto.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "Monte Carlo Project",
+      "source_file_or_folder": "Monte Carlo Project",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/Monte Carlo Project",
+      "category": "simulation",
+      "description": "Monte Carlo simulation of price paths / strategy outcomes.",
+      "required_data": [
+        "historical price series"
+      ],
+      "supported_asset_classes": [
+        "forex",
+        "metal",
+        "crypto"
+      ],
+      "mt5_applicability": "research_only",
+      "reason_for_applicability": "A simulation/analysis method rather than an execution strategy; informs risk research, not order generation.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "Oil Money Project",
+      "source_file_or_folder": "Oil Money Project",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/Oil Money Project",
+      "category": "quantamental",
+      "description": "Studies petrocurrency / oil-FX relationships (e.g. CAD, NOK).",
+      "required_data": [
+        "macro/fundamental series",
+        "FX rates"
+      ],
+      "supported_asset_classes": [
+        "forex",
+        "commodity"
+      ],
+      "mt5_applicability": "research_only",
+      "reason_for_applicability": "Macro/fundamental study; can inform FX bias but is not a directly executable signal.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "Options Straddle",
+      "source_file_or_folder": "Options Straddle",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/Options Straddle",
+      "category": "options",
+      "description": "Long/short straddle options strategy around volatility events.",
+      "required_data": [
+        "options chain",
+        "implied volatility"
+      ],
+      "supported_asset_classes": [
+        "options"
+      ],
+      "mt5_applicability": "not_applicable",
+      "reason_for_applicability": "Requires an options chain and greeks; not available on our spot MT5 forex/gold/crypto instruments.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "Pair Trading",
+      "source_file_or_folder": "Pair Trading",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/Pair Trading",
+      "category": "statistical_arbitrage",
+      "description": "Mean-reversion on the spread of two cointegrated instruments.",
+      "required_data": [
+        "two correlated price series (OHLC)"
+      ],
+      "supported_asset_classes": [
+        "forex",
+        "crypto"
+      ],
+      "mt5_applicability": "adaptable",
+      "reason_for_applicability": "Needs a cointegrated pair and spread/position bookkeeping; feasible on correlated FX/crypto pairs via an adapter.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "Parabolic SAR",
+      "source_file_or_folder": "Parabolic SAR",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/Parabolic SAR",
+      "category": "technical_indicator",
+      "description": "Parabolic Stop-and-Reverse trailing indicator.",
+      "required_data": [
+        "OHLC candles"
+      ],
+      "supported_asset_classes": [
+        "forex",
+        "metal",
+        "crypto"
+      ],
+      "mt5_applicability": "direct",
+      "reason_for_applicability": "Pure OHLC indicator; directly applicable (also useful for trailing SL).",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "Portfolio Optimization Project",
+      "source_file_or_folder": "Portfolio Optimization Project",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/Portfolio Optimization Project",
+      "category": "portfolio",
+      "description": "Mean-variance / efficient-frontier portfolio allocation.",
+      "required_data": [
+        "multi-asset return series"
+      ],
+      "supported_asset_classes": [
+        "equity",
+        "forex",
+        "crypto"
+      ],
+      "mt5_applicability": "research_only",
+      "reason_for_applicability": "Produces allocations, not entry signals; could later inform position sizing across allowlisted symbols via an adapter.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "RSI Pattern Recognition",
+      "source_file_or_folder": "RSI Pattern Recognition",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/RSI Pattern Recognition",
+      "category": "technical_indicator",
+      "description": "Pattern recognition on the RSI oscillator.",
+      "required_data": [
+        "OHLC candles"
+      ],
+      "supported_asset_classes": [
+        "forex",
+        "metal",
+        "crypto"
+      ],
+      "mt5_applicability": "direct",
+      "reason_for_applicability": "Built from OHLC + RSI; directly applicable.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "Shooting Star",
+      "source_file_or_folder": "Shooting Star",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/Shooting Star",
+      "category": "candlestick_pattern",
+      "description": "Shooting Star (and related) candlestick reversal pattern detection.",
+      "required_data": [
+        "OHLC candles"
+      ],
+      "supported_asset_classes": [
+        "forex",
+        "metal",
+        "crypto"
+      ],
+      "mt5_applicability": "direct",
+      "reason_for_applicability": "Candlestick pattern on OHLC; directly applicable.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "Smart Farmers Project",
+      "source_file_or_folder": "Smart Farmers Project",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/Smart Farmers Project",
+      "category": "quantamental",
+      "description": "Agricultural-commodity fundamentals study.",
+      "required_data": [
+        "agricultural commodity prices",
+        "fundamental data"
+      ],
+      "supported_asset_classes": [
+        "commodity"
+      ],
+      "mt5_applicability": "research_only",
+      "reason_for_applicability": "Agricultural-commodity research outside our forex/gold/crypto scope.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "VIX Calculator",
+      "source_file_or_folder": "VIX Calculator",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/VIX Calculator",
+      "category": "options",
+      "description": "Computes a VIX-style implied-volatility index from option prices.",
+      "required_data": [
+        "options chain / implied volatility"
+      ],
+      "supported_asset_classes": [
+        "index",
+        "options"
+      ],
+      "mt5_applicability": "research_only",
+      "reason_for_applicability": "An analytics calculator, not a tradable signal; needs options data we do not have. Useful as a research/volatility input only.",
+      "porting_status": "not_started"
+    },
+    {
+      "name": "Wisdom of Crowd Project",
+      "source_file_or_folder": "Wisdom of Crowd Project",
+      "repo_url": "https://github.com/je-suis-tm/quant-trading",
+      "local_path": "external/quant-trading/Wisdom of Crowd Project",
+      "category": "quantamental",
+      "description": "Sentiment / crowd-data driven study.",
+      "required_data": [
+        "sentiment/forum data",
+        "price series"
+      ],
+      "supported_asset_classes": [
+        "equity"
+      ],
+      "mt5_applicability": "research_only",
+      "reason_for_applicability": "Depends on external sentiment data; analysis input rather than an executable MT5 strategy.",
+      "porting_status": "not_started"
+    }
+  ]
+}
