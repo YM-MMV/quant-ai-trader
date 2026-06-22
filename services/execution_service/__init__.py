@@ -11,6 +11,19 @@ from services.execution_service.audit_log import (
     AuditEventType,
     AuditLog,
 )
+from services.execution_service.base_gateway import (
+    AccountInfo,
+    ExecutionGateway,
+    GatewayError,
+    GatewayNotConnectedError,
+    OrderCheckResult,
+    OrderRejectedError,
+    OrderResult,
+    Position,
+    Quote,
+    approval_problem,
+)
+from services.execution_service.mock_mt5_gateway import MockMT5Gateway
 from services.execution_service.paper_execution import PaperExecutionService
 from services.execution_service.trade_log import PaperTrade, TradeLogStore
 
@@ -21,4 +34,15 @@ __all__ = [
     "AuditLog",
     "AuditEvent",
     "AuditEventType",
+    "ExecutionGateway",
+    "MockMT5Gateway",
+    "AccountInfo",
+    "Quote",
+    "Position",
+    "OrderCheckResult",
+    "OrderResult",
+    "approval_problem",
+    "GatewayError",
+    "GatewayNotConnectedError",
+    "OrderRejectedError",
 ]
