@@ -1,0 +1,17 @@
+# app.yaml — application-level, non-secret defaults.
+#
+# Secrets (broker logins, API tokens) NEVER live here — they belong in .env.
+# `default_mode` must be one of: research | backtest | paper | mt5_demo | live.
+# Live stays disabled by default regardless of this value (see SAFETY.md).
+
+app_name: quant-ai-trader
+environment: development
+default_mode: paper
+data_dir: data
+log_level: INFO
+
+paths:
+  raw: data/raw
+  processed: data/processed
+  features: data/features
+  predictions: data/predictions
