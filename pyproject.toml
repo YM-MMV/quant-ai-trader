@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quant-ai-trader"
+version = "0.0.0"
+description = "Paper-first, risk-controlled quantitative trading AI research system"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.setuptools]
+# No packages yet; populated as the system is built out (see PLAN.md).
+packages = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+# Allow the suite to pass when no tests exist yet (M0).
+# Exit code 5 (no tests collected) is treated as success.
+python_files = ["test_*.py"]
