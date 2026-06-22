@@ -80,6 +80,24 @@ deterministic in-memory mock. Use it only when you specifically want that
 platform's engine — it is an alternative remote backtester, not a replacement.
 See [`docs/QUANTDINGER_SETUP.md`](docs/QUANTDINGER_SETUP.md).
 
+## Local API (FastAPI)
+
+A local, **paper-only** HTTP API ([`apps/api/main.py`](apps/api/main.py)) exposes
+market data, strategies, backtests, risk checks and paper trades. It is a thin
+layer over the same services and the agent tool layer, so it inherits every
+safety rule: **there is no live-execution endpoint**, and it exposes no secrets.
+
+```bash
+pip install -e ".[api]"
+uvicorn apps.api.main:app --reload        # http://127.0.0.1:8000
+# interactive docs at /docs ; liveness at /health
+```
+
+Endpoints: `GET /health`, `GET /symbols`, `GET /candles`, `GET /features`,
+`GET /strategies/inventory`, `GET /strategies/adapters`, `POST /backtests/run`,
+`POST /risk/check`, `POST /paper-trades`. The paper-trade route creates a trade
+only after the deterministic `RiskManager` approves the intent.
+
 ## Getting started (development)
 
 Requires Python 3.11.
