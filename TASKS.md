@@ -110,7 +110,34 @@ milestones land (see `PLAN.md` for the full roadmap).
       no trading, no MT5, no AI in strategies
 - [x] Empty adapters register & run; `pytest` passes
 
+## M9 — Research adapters (pair/stat-arb, options, VIX, portfolio, quantamental)
+
+Represent and classify the quant-trading projects that are **not** directly
+tradable on MT5, instead of dropping them. Structurally non-executable.
+
+- [x] `services/strategy_service/research_adapters/base.py` — `ResearchAdapter`
+      ABC, `ResearchOutput` (output type signal/feature/report/ranking/
+      risk_context + `MT5Applicability` + required datasets + reason), fail-safe
+      `run()`; only a `DIRECT` signal is executable, enforced by
+      `to_strategy_signal`/`ensure_not_executed` → `NotExecutableError`
+- [x] `pair_trading.py` — cointegration-screened spread mean-reversion (adaptable)
+- [x] `options_straddle.py` — straddle break-evens (not_applicable on spot MT5)
+- [x] `vix_calculator.py` — realized-vol proxy feature (research_only)
+- [x] `monte_carlo_project.py` — seeded GBM VaR / scenarios (research_only)
+- [x] `oil_money_project.py`, `ore_money_project.py` — commodity-currency
+      regressions (research_only)
+- [x] `smart_farmers_project.py` — agri-commodity momentum (research_only)
+- [x] `portfolio_optimization.py` — inverse-variance capital allocation ranking
+      (research_only; sizing aid, not a trade signal)
+- [x] `wisdom_of_crowd.py` — consensus forecast ranking (research_only)
+- [x] Each adapter declares required datasets, applicability, output type, and
+      why it is/ isn't tradable on MT5
+- [x] `tests/test_research_base.py`, `test_research_adapters.py`,
+      `test_research_functional.py` — execution barrier proven; every
+      non-technical inventory project represented; applicability matches M6
+- [x] No MT5 / network / execution; deterministic; `pytest` passes (272 tests)
+
 ## Next up
 
-- [ ] M8 — Backtest service
-- [ ] M9 — RiskManager
+- [ ] Backtest service (realistic friction)
+- [ ] RiskManager
