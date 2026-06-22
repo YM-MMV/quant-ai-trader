@@ -17,7 +17,7 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] `pyproject.toml` — minimal project so `pytest` runs
 - [x] `pytest` runs (passes with no tests yet)
 
-## M1 — Project skeleton & config foundation (current)
+## M1 — Project skeleton & config foundation
 
 - [x] Project structure (`apps/`, `services/`, `data/`, `strategies/`,
       `research/`, `external/`, `config/`)
@@ -33,7 +33,20 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] `pytest` passes
 - No real services contacted (no MT5 / OpenBB / Kronos / QuantDinger).
 
+## M2 — External repo resource setup (current)
+
+- [x] `config/external_repos.yaml` — repo manifest (6 repos + roles)
+- [x] `services/resource_service/repo_manifest.py` — manifest loading +
+      validation (https-only urls, no path traversal)
+- [x] `services/resource_service/repo_manager.py` — clone/update command
+      construction with an injectable runner (offline-testable)
+- [x] `scripts/clone_external_repos.py` — CLI (`--list`, `--dry-run`,
+      `--only`, `--depth`)
+- [x] `tests/test_repo_manifest.py` — manifest + manager tests, git mocked
+- [x] `pytest` passes offline (no network, no real git)
+- No third-party code imported; repos cloned into `external/` (git-ignored).
+
 ## Next up
 
-- [ ] M2 — Market data tools (mocked)
-- [ ] M3 — Feature engineering
+- [ ] M3 — Market data tools (mocked)
+- [ ] M4 — Feature engineering

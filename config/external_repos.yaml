@@ -1,0 +1,40 @@
+# external_repos.yaml — third-party repositories used as references.
+#
+# These repos are cloned into external/ (git-ignored) for inspection only.
+# We do NOT import their code directly yet (see PLAN.md / AGENTS.md); they are
+# read for strategy ideas, workflow patterns, data/model references, and tooling.
+#
+# `role` documents why each repo is here. `local_path` is relative to the repo
+# root. An optional `ref` (branch/tag/commit) may pin a repo; omitted = default
+# branch.
+
+repos:
+  quant_trading:
+    url: "https://github.com/je-suis-tm/quant-trading"
+    local_path: "external/quant-trading"
+    role: "strategy_source"
+
+  quantdinger:
+    url: "https://github.com/brokermr810/QuantDinger"
+    local_path: "external/QuantDinger"
+    role: "backtest_and_trading_platform_reference"
+
+  openbb:
+    url: "https://github.com/OpenBB-finance/OpenBB"
+    local_path: "external/OpenBB"
+    role: "data_platform_reference"
+
+  kronos:
+    url: "https://github.com/shiyu-coder/Kronos"
+    local_path: "external/Kronos"
+    role: "kline_prediction_model"
+
+  codebase_memory_mcp:
+    url: "https://github.com/DeusData/codebase-memory-mcp"
+    local_path: "external/codebase-memory-mcp"
+    role: "codebase_intelligence"
+
+  worldmonitor:
+    url: "https://github.com/koala73/worldmonitor"
+    local_path: "external/worldmonitor"
+    role: "optional_macro_news_monitoring_later"
