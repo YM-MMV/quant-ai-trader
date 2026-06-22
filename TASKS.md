@@ -161,7 +161,28 @@ tradable on MT5, instead of dropping them. Structurally non-executable.
       non-technical inventory project represented; applicability matches M6
 - [x] No MT5 / network / execution; deterministic; `pytest` passes (272 tests)
 
+## M10 — Simple backtesting engine
+
+Local, deterministic, single-symbol backtester (before QuantDinger). No MT5, no
+AI; every fill priced with friction.
+
+- [x] `services/backtest_service/costs.py` — `CostModel` (spread split per side,
+      slippage in points, commission placeholder); pip/point sizing
+- [x] `services/backtest_service/metrics.py` — `compute_metrics`: total trades,
+      win rate, average R, profit factor, max drawdown (abs + %), Sharpe
+      placeholder, expectancy, largest-winner contribution, consecutive losses,
+      average holding bars
+- [x] `services/backtest_service/simple_backtester.py` — `SimpleBacktester`:
+      BUY/SELL/NONE, next-bar-open entry (no look-ahead), SL/TP intrabar,
+      max holding period, end-of-day/session close, equity curve + trade list;
+      **stop loss mandatory — signals without one are rejected**
+- [x] `tests/test_simple_backtester.py`, `tests/test_backtest_metrics.py`
+- [x] Backtests fake candles; applies costs (frictionless round-trip = break-even,
+      with friction < 0); no-stop signals rejected; deterministic; `pytest`
+      passes (248 tests)
+
 ## Next up
 
-- [ ] Backtest service (realistic friction)
+- [ ] M11 — Strategy validation & approval gate
+- [ ] QuantDinger integration
 - [ ] RiskManager
