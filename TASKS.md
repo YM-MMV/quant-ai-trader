@@ -81,7 +81,7 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] NaN warmup handled; edge cases (flat/constant/short series) tested
 - [x] `pytest` passes. Dep added: numpy.
 
-## M6 — Strategy inventory scanner (current)
+## M6 — Strategy inventory scanner
 
 - [x] `services/strategy_service/strategy_classifier.py` — static name-based
       MT5-applicability knowledge base (`classify`); unknown → research_only
@@ -94,7 +94,23 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] Tests use fixtures only; verified scanner never executes/imports scripts
 - [x] `pytest` passes
 
+## M7 — Strategy adapter framework (current)
+
+- [x] `services/strategy_service/base.py` — `StrategyAdapter` ABC (`get_metadata`,
+      `validate_inputs`, `supports_symbol`/`supports_timeframe`, template
+      `generate_signal`); `AdapterSignal` (side BUY/SELL/NONE, confidence,
+      reason, suggested SL/TP, risk notes, source strategy/repo, adapter version);
+      `AdapterMetadata`
+- [x] `services/strategy_service/registry.py` — `StrategyRegistry` (register/
+      get/find/unregister), process-wide `default_registry`, `@register_adapter`
+- [x] `services/strategy_service/adapters/` — package + `NullAdapter` (empty
+      reference adapter that always abstains)
+- [x] `tests/test_strategy_base.py`, `tests/test_strategy_registry.py`
+- [x] Fail-safe: insufficient data / adapter error → `NONE`; deterministic;
+      no trading, no MT5, no AI in strategies
+- [x] Empty adapters register & run; `pytest` passes
+
 ## Next up
 
-- [ ] M7 — Strategy adapters
 - [ ] M8 — Backtest service
+- [ ] M9 — RiskManager
