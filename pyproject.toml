@@ -23,6 +23,12 @@ dependencies = [
 dev = [
     "pytest>=8.0",
 ]
+# MetaTrader 5 data collection (M14). Windows-only; talks to a local terminal.
+# Install with `pip install -e .[mt5]` on the data-collection machine. Tests
+# mock the package, so it is not needed for CI.
+mt5 = [
+    "MetaTrader5>=5.0; platform_system == 'Windows'",
+]
 
 [tool.setuptools.packages.find]
 # Python packages live under apps/ and services/. Data directories
