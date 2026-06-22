@@ -121,3 +121,21 @@ pytest
 ```
 
 > No real credentials are required to run the test suite. Use mocks first.
+
+## Full-system smoke test
+
+[`tests/test_full_pipeline_smoke.py`](tests/test_full_pipeline_smoke.py) runs the
+whole pipeline end to end on **fake data and mocks only** — fake candles →
+features → mock Kronos prediction → all executable strategy adapters → signals →
+backtest → strategy validation → `OrderIntent` → `RiskManager` → paper trade →
+audit log. It touches **no MT5, no network, no external services, and no
+secrets**, and is fully deterministic.
+
+Run just the smoke test with:
+
+```bash
+pytest tests/test_full_pipeline_smoke.py -v
+```
+
+Use it as a quick confidence check that the services still wire together after a
+change.
