@@ -56,7 +56,7 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] `tests/test_codebase_memory_docs.py` — presence/content checks
 - Binary is optional; not required for tests/CI. Realigned `PLAN.md` numbering.
 
-## M4 — Candle storage (Parquet + DuckDB) (current)
+## M4 — Candle storage (Parquet + DuckDB)
 
 - [x] `services/data_service/sample_data.py` — deterministic fake candles
       (canonical 11-column schema; no MT5/OpenBB)
@@ -68,7 +68,20 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] `pytest` passes (save EURUSD M15; query last 500; query date range)
 - Deps added: pandas, pyarrow, duckdb. Raw history never fed to the LLM.
 
+## M5 — Feature engineering (current)
+
+- [x] `services/data_service/features.py` — causal features: simple/log
+      returns, rolling volatility, ATR, RSI, MACD (+signal/hist), Bollinger
+      Bands (+width), spread percentile, range expansion, trend score, HTF
+      trend placeholder; `compute_features` assembles the full frame
+- [x] `services/data_service/sessions.py` — Asia/London/New York/overlap/closed
+      labels from UTC timestamp (causal)
+- [x] `tests/test_features.py`, `tests/test_sessions.py`
+- [x] No look-ahead: proven by prefix-stability AND future-mutation tests
+- [x] NaN warmup handled; edge cases (flat/constant/short series) tested
+- [x] `pytest` passes. Dep added: numpy.
+
 ## Next up
 
-- [ ] M5 — Feature engineering
 - [ ] M6 — Strategy inventory & classification
+- [ ] M7 — Strategy adapters
