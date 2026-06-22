@@ -13,43 +13,60 @@ before being considered done. Prefer small, reviewable commits.
 
 ## Milestones
 
-- **M0 — Project governance** *(current)*
-  Create governance docs (`AGENTS.md`, `SAFETY.md`, `ARCHITECTURE.md`,
-  `PLAN.md`, `TASKS.md`, `RESOURCES.md`, `README.md`), `.gitignore`,
-  `.env.example`, and a minimal Python project so `pytest` runs.
+> Numbering reflects the actual delivery order. Completed milestones are marked
+> ✅; the rest are planned and may be refined as work proceeds.
 
-- **M1 — Config & modes**
-  Mode enum (`research`/`backtest`/`paper`/`mt5_demo`/`live`), settings loader
-  from `.env`, `config/symbols.yaml` broker symbol mapping, allowlist.
+- **M0 — Project governance** ✅
+  Governance docs (`AGENTS.md`, `SAFETY.md`, `ARCHITECTURE.md`, `PLAN.md`,
+  `TASKS.md`, `RESOURCES.md`, `README.md`), `.gitignore`, `.env.example`, and a
+  minimal Python project so `pytest` runs.
 
-- **M2 — Market data tools (mocked)**
+- **M1 — Project skeleton & config foundation** ✅
+  Clean directory structure (`apps/`, `services/`, `data/`, `strategies/`,
+  `research/`, `external/`, `config/`), config files (`symbols.yaml`,
+  `risk.yaml`, `timeframes.yaml`, `app.yaml`), typed Pydantic models, mode enum
+  (`research`/`backtest`/`paper`/`mt5_demo`/`live`), and a config/`.env` loader
+  with the live lock; tests.
+
+- **M2 — External repo resource setup** ✅
+  Manifest of third-party reference repos (`config/external_repos.yaml`),
+  clone/update manager and CLI (`services/resource_service/`,
+  `scripts/clone_external_repos.py`); offline-tested. No third-party code
+  imported.
+
+- **M3 — Codebase-memory MCP setup** ✅
+  Docs and helper scripts for `codebase-memory-mcp` (source-code intelligence,
+  not market data): `docs/CODEBASE_MEMORY_MCP.md`,
+  `scripts/index_codebase_memory.{sh,ps1}`.
+
+- **M4 — Market data tools (mocked)**
   Normalized OHLCV interface with a mock data source; tests.
 
-- **M3 — Feature engineering**
+- **M5 — Feature engineering**
   Indicator/feature library with explicit no-look-ahead guarantees; tests.
 
-- **M4 — Strategy inventory & classification**
-  Vendor `quant-trading` under `external/`, scanner, classification taxonomy,
+- **M6 — Strategy inventory & classification**
+  Scan `external/quant-trading`, build a classification taxonomy,
   `research_only` / `not_applicable_to_mt5` tagging.
 
-- **M5 — Strategy adapters**
+- **M7 — Strategy adapters**
   Convert feasible strategies into internal adapters with data/asset/timeframe
   contracts, signals, SL/TP, risk notes.
 
-- **M6 — Backtest service**
+- **M8 — Backtest service**
   Realistic-friction backtester; per-strategy compatibility checks; tests.
 
-- **M7 — RiskManager**
+- **M9 — RiskManager**
   Deterministic risk checks and `RiskDecision`; kill switch; SL/TP, spread,
   daily-loss, max-open-trades, allowlist enforcement; tests.
 
-- **M8 — Paper execution**
+- **M10 — Paper execution**
   Simulated fills behind `RiskManager`; trade + audit logs; tests.
 
-- **M9 — Kronos prediction service**
+- **M11 — Kronos prediction service**
   Optional candlestick model integration (mocked first); tests.
 
-- **M10 — MT5 gateway (demo)**
+- **M12 — MT5 gateway (demo)**
   Locked gateway, `mt5_demo` mode, live locks; mocked MT5 first; tests.
 
 > `live` execution remains disabled by default and is only enabled by an
