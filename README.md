@@ -48,6 +48,24 @@ AI Agent → Market Data → Feature Engineering → Strategy Inventory/Adapters
   → Kronos Prediction → Backtest → RiskManager → Paper / MT5 Gateway → Logs
 ```
 
+## Documentation
+
+**Start here:** [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) — install,
+configure `.env`, and run the tests.
+
+Runbooks (task-focused, step-by-step):
+
+- [`docs/RUNBOOK_PAPER_TRADING.md`](docs/RUNBOOK_PAPER_TRADING.md) — backtest and
+  paper trade a strategy (services or the local API).
+- [`docs/RUNBOOK_MT5_DEMO_ACCOUNT.md`](docs/RUNBOOK_MT5_DEMO_ACCOUNT.md) — connect
+  an MT5 demo account, download candles, keep live disabled, and switch to a real
+  account later.
+- [`docs/RUNBOOK_STRATEGY_PORTING.md`](docs/RUNBOOK_STRATEGY_PORTING.md) — add a
+  new strategy adapter.
+- [`docs/RUNBOOK_RISK_MANAGER.md`](docs/RUNBOOK_RISK_MANAGER.md) — the risk gate,
+  the kill switch, and reviewing rejected trades.
+- [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) — common problems and fixes.
+
 ## Project docs
 
 - [`AGENTS.md`](AGENTS.md) — rules for AI coding agents
