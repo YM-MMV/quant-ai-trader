@@ -56,6 +56,8 @@ AI Agent → Market Data → Feature Engineering → Strategy Inventory/Adapters
 - [`PLAN.md`](PLAN.md) — milestones
 - [`TASKS.md`](TASKS.md) — task checklist
 - [`RESOURCES.md`](RESOURCES.md) — external references
+- [`docs/CODEBASE_MEMORY_MCP.md`](docs/CODEBASE_MEMORY_MCP.md) — codebase-memory
+  MCP setup for source-code intelligence (optional dev tool)
 
 ## Getting started (development)
 

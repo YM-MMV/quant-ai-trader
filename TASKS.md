@@ -33,7 +33,7 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] `pytest` passes
 - No real services contacted (no MT5 / OpenBB / Kronos / QuantDinger).
 
-## M2 — External repo resource setup (current)
+## M2 — External repo resource setup
 
 - [x] `config/external_repos.yaml` — repo manifest (6 repos + roles)
 - [x] `services/resource_service/repo_manifest.py` — manifest loading +
@@ -46,7 +46,17 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] `pytest` passes offline (no network, no real git)
 - No third-party code imported; repos cloned into `external/` (git-ignored).
 
+## M3 — Codebase-memory MCP setup (current)
+
+- [x] `docs/CODEBASE_MEMORY_MCP.md` — setup + usage (source-code intelligence,
+      NOT market data); what to index; useful safety-path queries
+- [x] `scripts/index_codebase_memory.sh` — index helper (bash)
+- [x] `scripts/index_codebase_memory.ps1` — index helper (PowerShell)
+- [x] `README.md` links to the docs
+- [x] `tests/test_codebase_memory_docs.py` — presence/content checks
+- Binary is optional; not required for tests/CI. Realigned `PLAN.md` numbering.
+
 ## Next up
 
-- [ ] M3 — Market data tools (mocked)
-- [ ] M4 — Feature engineering
+- [ ] M4 — Market data tools (mocked)
+- [ ] M5 — Feature engineering
