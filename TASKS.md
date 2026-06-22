@@ -181,8 +181,29 @@ AI; every fill priced with friction.
       with friction < 0); no-stop signals rejected; deterministic; `pytest`
       passes (248 tests)
 
+## M11 — Strategy validation & approval gate
+
+Strict, deterministic gates a strategy must clear before paper trading. Required
+gates block approval; sensitivity gates block only when stressed evidence is
+supplied; parameter-sensitivity and walk-forward are explicit placeholders.
+
+- [x] `config/strategy_validation.yaml` — thresholds (min trades, profit factor,
+      max drawdown %, max largest-trade contribution %, min expectancy, require
+      stop/TP, require out-of-sample positive, stress knobs)
+- [x] `services/backtest_service/strategy_validator.py` — `StrategyValidator`
+      over a `ValidationInput`; gates: minimum trades, OOS-positive, max
+      drawdown, profit factor, expectancy, largest-trade contribution, no
+      missing SL, no missing TP, slippage/spread sensitivity, parameter &
+      walk-forward placeholders, no look-ahead flags. Emits a `ValidationReport`
+      and, only when approved, an `ApprovalRecord`. `build_validation_input`
+      glues in the M10 backtester (in/out-of-sample + stress runs)
+- [x] `tests/test_strategy_validator.py` — strong strategy approved w/ record;
+      each required gate rejects a weak strategy; sensitivity blocking/robust/
+      not-evaluated; placeholders non-blocking; config loads from YAML;
+      deterministic; end-to-end via the backtester
+- [x] No MT5 / network / AI; `pytest` passes (385 tests)
+
 ## Next up
 
-- [ ] M11 — Strategy validation & approval gate
 - [ ] QuantDinger integration
 - [ ] RiskManager

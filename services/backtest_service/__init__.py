@@ -19,6 +19,15 @@ from services.backtest_service.simple_backtester import (
     SimpleBacktester,
     Trade,
 )
+from services.backtest_service.strategy_validator import (
+    ApprovalRecord,
+    StrategyValidationConfig,
+    StrategyValidator,
+    ValidationInput,
+    ValidationReport,
+    build_validation_input,
+    load_validation_config,
+)
 
 __all__ = [
     "CostModel",
@@ -34,4 +43,11 @@ __all__ = [
     "Direction",
     "SimpleBacktester",
     "Trade",
+    "StrategyValidator",
+    "StrategyValidationConfig",
+    "ValidationInput",
+    "ValidationReport",
+    "ApprovalRecord",
+    "load_validation_config",
+    "build_validation_input",
 ]

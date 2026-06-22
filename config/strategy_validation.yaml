@@ -1,0 +1,21 @@
+# strategy_validation.yaml — strict gates a strategy must clear before paper trading.
+#
+# Read by services/backtest_service/strategy_validator.py. Deterministic: a
+# strategy is APPROVED only when every *required* gate passes. Placeholder and
+# sensitivity gates are recorded but do not block on their own (sensitivity
+# gates do block when stressed results are supplied and fail).
+
+minimum_trades: 100                          # statistically meaningful sample size
+minimum_profit_factor: 1.2                   # gross profit / gross loss
+maximum_drawdown_pct: 15.0                   # peak-to-trough equity drawdown, percent
+maximum_largest_trade_contribution_pct: 25.0 # one trade may not dominate the profit
+minimum_expectancy: 0.0                      # average pnl per trade must be positive
+require_stop_loss: true                      # every trade must carry a stop loss
+require_take_profit: true                    # every trade must carry a take profit
+require_out_of_sample_positive: true         # must be net-positive out of sample
+
+# Sensitivity gates — evaluated only when stressed backtest results are supplied;
+# otherwise recorded as not-evaluated (non-blocking).
+minimum_stress_profit_factor: 1.0            # profit factor must survive added stress
+slippage_stress_points: 2.0                  # extra slippage (points) in the stress run
+spread_stress_multiplier: 1.5                # spread multiplier in the stress run
