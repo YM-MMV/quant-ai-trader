@@ -68,7 +68,7 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] `pytest` passes (save EURUSD M15; query last 500; query date range)
 - Deps added: pandas, pyarrow, duckdb. Raw history never fed to the LLM.
 
-## M5 — Feature engineering (current)
+## M5 — Feature engineering
 
 - [x] `services/data_service/features.py` — causal features: simple/log
       returns, rolling volatility, ATR, RSI, MACD (+signal/hist), Bollinger
@@ -81,7 +81,20 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] NaN warmup handled; edge cases (flat/constant/short series) tested
 - [x] `pytest` passes. Dep added: numpy.
 
+## M6 — Strategy inventory scanner (current)
+
+- [x] `services/strategy_service/strategy_classifier.py` — static name-based
+      MT5-applicability knowledge base (`classify`); unknown → research_only
+- [x] `services/strategy_service/inventory_scanner.py` — static scan of a
+      quant-trading checkout → typed `InventoryItem`s (no import/exec of code)
+- [x] `strategies/inventory/quant_trading_inventory.json` — curated baseline
+      (17 items; "Ore Money Project" in KB, omitted from baseline)
+- [x] `docs/STRATEGY_INVENTORY.md` — JSON schema + process documented; README links
+- [x] `tests/test_strategy_classifier.py`, `tests/test_strategy_inventory_scanner.py`
+- [x] Tests use fixtures only; verified scanner never executes/imports scripts
+- [x] `pytest` passes
+
 ## Next up
 
-- [ ] M6 — Strategy inventory & classification
 - [ ] M7 — Strategy adapters
+- [ ] M8 — Backtest service

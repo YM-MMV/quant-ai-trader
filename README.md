@@ -58,6 +58,8 @@ AI Agent → Market Data → Feature Engineering → Strategy Inventory/Adapters
 - [`RESOURCES.md`](RESOURCES.md) — external references
 - [`docs/CODEBASE_MEMORY_MCP.md`](docs/CODEBASE_MEMORY_MCP.md) — codebase-memory
   MCP setup for source-code intelligence (optional dev tool)
+- [`docs/STRATEGY_INVENTORY.md`](docs/STRATEGY_INVENTORY.md) — quant-trading
+  strategy inventory JSON format and classification process
 
 ## Getting started (development)
 
