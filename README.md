@@ -60,6 +60,8 @@ AI Agent → Market Data → Feature Engineering → Strategy Inventory/Adapters
   MCP setup for source-code intelligence (optional dev tool)
 - [`docs/STRATEGY_INVENTORY.md`](docs/STRATEGY_INVENTORY.md) — quant-trading
   strategy inventory JSON format and classification process
+- [`docs/OPENBB_SETUP.md`](docs/OPENBB_SETUP.md) — OpenBB research-data layer
+  (**optional**, research-only; MT5 stays primary for execution-aligned data)
 - [`docs/QUANTDINGER_SETUP.md`](docs/QUANTDINGER_SETUP.md) — QuantDinger client
   (**optional** external backtest platform) vs the local backtester
 
