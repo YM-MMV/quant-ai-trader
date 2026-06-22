@@ -110,7 +110,31 @@ milestones land (see `PLAN.md` for the full roadmap).
       no trading, no MT5, no AI in strategies
 - [x] Empty adapters register & run; `pytest` passes
 
+## M8 — Technical-indicator strategy adapters (port from quant-trading)
+
+Clean re-implementations (no original code imported/executed; no MT5; no live
+trading) behind the M7 `StrategyAdapter` interface, each returning BUY/SELL/NONE.
+
+- [x] `services/strategy_service/adapters/_common.py` — shared helpers: pip/point
+      sizing, spread+slippage cost awareness, ATR-based SL/TP suggestions
+- [x] `macd_oscillator.py` — MACD/signal-line crossover
+- [x] `heikin_ashi.py` — Heikin-Ashi candle colour flip
+- [x] `london_breakout.py` — Asia-range breakout at the London open (session-aware)
+- [x] `awesome_oscillator.py` — AO zero-line crossover
+- [x] `dual_thrust.py` — volatility-range breakout (k1/k2 triggers)
+- [x] `parabolic_sar.py` — Wilder stop-and-reverse flip (SAR as trailing stop)
+- [x] `bollinger_bands_pattern.py` — band re-entry mean-reversion
+- [x] `rsi_pattern.py` — RSI exit from overbought/oversold extreme
+- [x] `shooting_star.py` — shooting-star / hammer single-candle reversal
+- [x] Each adapter: min data length, supported timeframes, asset classes
+      (forex/metal/crypto), spread/slippage awareness, suggested SL/TP
+- [x] `register_technical_indicator_adapters()` wires all nine into a registry
+      (import stays side-effect free)
+- [x] `tests/test_adapter_*.py` + `tests/test_adapters_registration.py` — sample
+      candles force BUY/SELL/NONE per adapter; metadata + fail-safe contract
+- [x] `pytest` passes (293 tests)
+
 ## Next up
 
-- [ ] M8 — Backtest service
-- [ ] M9 — RiskManager
+- [ ] Backtest service (realistic friction)
+- [ ] RiskManager
