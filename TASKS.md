@@ -203,7 +203,28 @@ supplied; parameter-sensitivity and walk-forward are explicit placeholders.
       deterministic; end-to-end via the backtester
 - [x] No MT5 / network / AI; `pytest` passes (385 tests)
 
+## M12 — Risk manager & position sizing
+
+Deterministic risk controls and lot sizing — the single gate before execution.
+No AI, no MT5, no network; identical inputs always give identical decisions.
+
+- [x] `config/risk.yaml` (+ `RiskConfig`) — added `allowed_modes`,
+      `max_trades_per_day`, `max_volatility` (defaults keep older files valid)
+- [x] `services/risk_service/symbol_specs.py` — `SymbolSpec` table (EURUSD,
+      GBPUSD, USDJPY, AUDUSD, XAUUSD, BTCUSD): pip/point size, contract size,
+      min/max/step lot, digits, broker-symbol mapping
+- [x] `services/risk_service/position_sizing.py` — `compute_lot_size`: balance ×
+      risk% ÷ (stop distance × contract size), floored to lot step, clamped to
+      min/max; 0 lots when the budget can't fund min lot; reports money at risk
+- [x] `services/risk_service/risk_manager.py` — `RiskManager.evaluate(intent,
+      context)` → `RiskDecision`; evaluates all 14 rules (mode/live lock,
+      allowlist, SL/TP present, risk %, daily loss, max open, max/day, spread,
+      volatility, duplicate, approved, research-only) and lists every violation
+- [x] `tests/test_risk_manager.py`, `tests/test_position_sizing.py` — every
+      rejection rule + approval path; EURUSD & XAUUSD sizing; deterministic
+- [x] `pytest` passes (412 tests)
+
 ## Next up
 
 - [ ] QuantDinger integration
-- [ ] RiskManager
+- [ ] Paper execution

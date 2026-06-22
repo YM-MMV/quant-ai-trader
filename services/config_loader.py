@@ -74,6 +74,18 @@ class RiskConfig(_Config):
     max_total_exposure_pct: float = Field(..., ge=0, le=100)
     kill_switch_enabled: bool = True
 
+    # M12 additions (defaults keep older risk.yaml files valid).
+    allowed_modes: list[TradingMode] = Field(
+        default_factory=lambda: [
+            TradingMode.RESEARCH,
+            TradingMode.BACKTEST,
+            TradingMode.PAPER,
+            TradingMode.MT5_DEMO,
+        ]
+    )
+    max_trades_per_day: int = Field(20, ge=0)
+    max_volatility: Optional[float] = Field(None, ge=0)  # None ⇒ no volatility ceiling
+
 
 class TimeframeSpec(_Config):
     minutes: int = Field(..., gt=0)
