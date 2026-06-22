@@ -29,6 +29,12 @@ dev = [
 mt5 = [
     "MetaTrader5>=5.0; platform_system == 'Windows'",
 ]
+# OpenBB research data (M17). Optional, research-only supplementary layer;
+# heavy, so it is kept out of core deps. Install with `pip install -e .[openbb]`.
+# Tests mock the client, so it is not needed for CI.
+openbb = [
+    "openbb>=4.0",
+]
 
 [tool.setuptools.packages.find]
 # Python packages live under apps/ and services/. Data directories
