@@ -46,7 +46,7 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] `pytest` passes offline (no network, no real git)
 - No third-party code imported; repos cloned into `external/` (git-ignored).
 
-## M3 — Codebase-memory MCP setup (current)
+## M3 — Codebase-memory MCP setup
 
 - [x] `docs/CODEBASE_MEMORY_MCP.md` — setup + usage (source-code intelligence,
       NOT market data); what to index; useful safety-path queries
@@ -56,7 +56,19 @@ milestones land (see `PLAN.md` for the full roadmap).
 - [x] `tests/test_codebase_memory_docs.py` — presence/content checks
 - Binary is optional; not required for tests/CI. Realigned `PLAN.md` numbering.
 
+## M4 — Candle storage (Parquet + DuckDB) (current)
+
+- [x] `services/data_service/sample_data.py` — deterministic fake candles
+      (canonical 11-column schema; no MT5/OpenBB)
+- [x] `services/data_service/storage.py` — `CandleStore`: validate required
+      columns, sort ascending, save/load Parquet (`<base>/<symbol>/<tf>.parquet`)
+- [x] `services/data_service/query.py` — `CandleQuery` over DuckParquet:
+      `last_n`, `date_range` (inclusive, ascending)
+- [x] `tests/test_candle_storage.py`, `tests/test_candle_query.py` (fake data)
+- [x] `pytest` passes (save EURUSD M15; query last 500; query date range)
+- Deps added: pandas, pyarrow, duckdb. Raw history never fed to the LLM.
+
 ## Next up
 
-- [ ] M4 — Market data tools (mocked)
 - [ ] M5 — Feature engineering
+- [ ] M6 — Strategy inventory & classification
