@@ -110,6 +110,57 @@ milestones land (see `PLAN.md` for the full roadmap).
       no trading, no MT5, no AI in strategies
 - [x] Empty adapters register & run; `pytest` passes
 
+## M8 — Technical-indicator strategy adapters (port from quant-trading)
+
+Clean re-implementations (no original code imported/executed; no MT5; no live
+trading) behind the M7 `StrategyAdapter` interface, each returning BUY/SELL/NONE.
+
+- [x] `services/strategy_service/adapters/_common.py` — shared helpers: pip/point
+      sizing, spread+slippage cost awareness, ATR-based SL/TP suggestions
+- [x] `macd_oscillator.py` — MACD/signal-line crossover
+- [x] `heikin_ashi.py` — Heikin-Ashi candle colour flip
+- [x] `london_breakout.py` — Asia-range breakout at the London open (session-aware)
+- [x] `awesome_oscillator.py` — AO zero-line crossover
+- [x] `dual_thrust.py` — volatility-range breakout (k1/k2 triggers)
+- [x] `parabolic_sar.py` — Wilder stop-and-reverse flip (SAR as trailing stop)
+- [x] `bollinger_bands_pattern.py` — band re-entry mean-reversion
+- [x] `rsi_pattern.py` — RSI exit from overbought/oversold extreme
+- [x] `shooting_star.py` — shooting-star / hammer single-candle reversal
+- [x] Each adapter: min data length, supported timeframes, asset classes
+      (forex/metal/crypto), spread/slippage awareness, suggested SL/TP
+- [x] `register_technical_indicator_adapters()` wires all nine into a registry
+      (import stays side-effect free)
+- [x] `tests/test_adapter_*.py` + `tests/test_adapters_registration.py` — sample
+      candles force BUY/SELL/NONE per adapter; metadata + fail-safe contract
+- [x] `pytest` passes (293 tests)
+
+## M9 — Research adapters (pair/stat-arb, options, VIX, portfolio, quantamental)
+
+Represent and classify the quant-trading projects that are **not** directly
+tradable on MT5, instead of dropping them. Structurally non-executable.
+
+- [x] `services/strategy_service/research_adapters/base.py` — `ResearchAdapter`
+      ABC, `ResearchOutput` (output type signal/feature/report/ranking/
+      risk_context + `MT5Applicability` + required datasets + reason), fail-safe
+      `run()`; only a `DIRECT` signal is executable, enforced by
+      `to_strategy_signal`/`ensure_not_executed` → `NotExecutableError`
+- [x] `pair_trading.py` — cointegration-screened spread mean-reversion (adaptable)
+- [x] `options_straddle.py` — straddle break-evens (not_applicable on spot MT5)
+- [x] `vix_calculator.py` — realized-vol proxy feature (research_only)
+- [x] `monte_carlo_project.py` — seeded GBM VaR / scenarios (research_only)
+- [x] `oil_money_project.py`, `ore_money_project.py` — commodity-currency
+      regressions (research_only)
+- [x] `smart_farmers_project.py` — agri-commodity momentum (research_only)
+- [x] `portfolio_optimization.py` — inverse-variance capital allocation ranking
+      (research_only; sizing aid, not a trade signal)
+- [x] `wisdom_of_crowd.py` — consensus forecast ranking (research_only)
+- [x] Each adapter declares required datasets, applicability, output type, and
+      why it is/ isn't tradable on MT5
+- [x] `tests/test_research_base.py`, `test_research_adapters.py`,
+      `test_research_functional.py` — execution barrier proven; every
+      non-technical inventory project represented; applicability matches M6
+- [x] No MT5 / network / execution; deterministic; `pytest` passes (272 tests)
+
 ## M10 — Simple backtesting engine
 
 Local, deterministic, single-symbol backtester (before QuantDinger). No MT5, no
@@ -132,5 +183,6 @@ AI; every fill priced with friction.
 
 ## Next up
 
+- [ ] M11 — Strategy validation & approval gate
 - [ ] QuantDinger integration
 - [ ] RiskManager
