@@ -64,6 +64,8 @@ AI Agent → Market Data → Feature Engineering → Strategy Inventory/Adapters
   (**optional**, research-only; MT5 stays primary for execution-aligned data)
 - [`docs/QUANTDINGER_SETUP.md`](docs/QUANTDINGER_SETUP.md) — QuantDinger client
   (**optional** external backtest platform) vs the local backtester
+- [`docs/MT5_EXECUTION_SETUP.md`](docs/MT5_EXECUTION_SETUP.md) — real MT5
+  execution gateway (**locked by default**; Windows-only; live locks)
 
 ## Backtesting: local engine vs QuantDinger
 
