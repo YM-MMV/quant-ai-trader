@@ -123,6 +123,62 @@ def test_reject_daily_loss_limit_hit():
     assert d.checks["daily_loss_limit"] is False
 
 
+# --------------------------------------------------------------------------- #
+# Balance-relative daily-loss limit (scales with the account)
+# --------------------------------------------------------------------------- #
+def test_daily_loss_percent_scales_with_balance():
+    # Absolute cap off, 2% relative cap -> 2% of 1,000,000 = 20,000.
+    cfg = make_config(max_daily_loss=0.0, max_daily_loss_pct=2.0)
+    ok = evaluate(
+        context=make_context(account_balance=1_000_000.0, realized_daily_loss=19_000.0),
+        config=cfg,
+    )
+    assert ok.checks["daily_loss_limit"] is True
+
+    hit = evaluate(
+        context=make_context(account_balance=1_000_000.0, realized_daily_loss=21_000.0),
+        config=cfg,
+    )
+    assert hit.checks["daily_loss_limit"] is False
+    assert any("hit limit 20000.00" in r for r in hit.reasons)
+
+
+def test_daily_loss_uses_tighter_of_absolute_and_percent():
+    # Both caps on: the *smaller* one applies.
+    cfg = make_config(max_daily_loss=100.0, max_daily_loss_pct=2.0)
+    # Small balance: 2% = 20 < 100 -> percent is tighter, 50 breaches it.
+    small = evaluate(
+        context=make_context(account_balance=1_000.0, realized_daily_loss=50.0),
+        config=cfg,
+    )
+    assert small.checks["daily_loss_limit"] is False
+    # Large balance: 2% = 20,000 > 100 -> absolute is tighter, 50 is under it.
+    large = evaluate(
+        context=make_context(account_balance=1_000_000.0, realized_daily_loss=50.0),
+        config=cfg,
+    )
+    assert large.checks["daily_loss_limit"] is True
+
+
+def test_daily_loss_percent_disabled_keeps_absolute():
+    # Back-compat: pct=0 -> behaves exactly like the absolute-only cap.
+    cfg = make_config(max_daily_loss=100.0, max_daily_loss_pct=0.0)
+    assert evaluate(
+        context=make_context(realized_daily_loss=150.0), config=cfg
+    ).checks["daily_loss_limit"] is False
+    assert evaluate(
+        context=make_context(realized_daily_loss=50.0), config=cfg
+    ).checks["daily_loss_limit"] is True
+
+
+def test_daily_loss_no_limit_when_both_disabled():
+    cfg = make_config(max_daily_loss=0.0, max_daily_loss_pct=0.0)
+    d = evaluate(
+        context=make_context(realized_daily_loss=1_000_000.0), config=cfg
+    )
+    assert d.checks["daily_loss_limit"] is True
+
+
 def test_reject_max_open_trades():
     open_trades = (("GBPUSD", "buy"), ("USDJPY", "buy"), ("AUDUSD", "buy"))
     d = evaluate(context=make_context(open_trades=open_trades))

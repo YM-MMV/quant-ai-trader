@@ -7,7 +7,8 @@
 require_stop_loss: true       # no order without a stop loss
 require_take_profit: true     # no order without a take profit
 
-max_daily_loss: 100.0         # account currency; halt new orders past this loss
+max_daily_loss: 0.0           # absolute halt in account currency; 0 = disabled (use the % limit below)
+max_daily_loss_pct: 2.0       # halt new orders once today's loss reaches this % of balance (scales with the account)
 max_open_trades: 3            # max simultaneous open positions
 max_spread_points: 30         # reject if spread (in points) exceeds this
 
