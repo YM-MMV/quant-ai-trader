@@ -70,6 +70,8 @@ Runbooks (task-focused, step-by-step):
 
 - [`AGENTS.md`](AGENTS.md) — rules for AI coding agents
 - [`SAFETY.md`](SAFETY.md) — hard safety rules
+- [`docs/FINAL_SAFETY_REVIEW.md`](docs/FINAL_SAFETY_REVIEW.md) — whole-codebase
+  audit confirming no execution bypass exists (enforced by safety-guard tests)
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — system design
 - [`PLAN.md`](PLAN.md) — milestones
 - [`TASKS.md`](TASKS.md) — task checklist
