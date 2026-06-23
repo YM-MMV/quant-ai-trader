@@ -20,11 +20,12 @@ from services.data_service.sample_data import generate_candles
 # Builders
 # --------------------------------------------------------------------------- #
 def metrics(*, total_trades=150, profit_factor=1.5, max_drawdown_pct=0.08,
-            expectancy=2.0, largest=0.15, net_profit=300.0):
+            expectancy=2.0, largest=0.15, net_profit=300.0, sharpe_ratio=None):
     return BacktestMetrics(
         total_trades=total_trades, profit_factor=profit_factor,
         max_drawdown_pct=max_drawdown_pct, expectancy=expectancy,
         largest_winner_contribution=largest, net_profit=net_profit,
+        sharpe_ratio=sharpe_ratio,
     )
 
 
@@ -134,6 +135,54 @@ def test_placeholders_present_and_non_blocking():
         r = _result(report, name)
         assert r.status is RuleStatus.NOT_EVALUATED
         assert r.blocking is False
+
+
+# --------------------------------------------------------------------------- #
+# Minimum-Sharpe gate (opt-in)
+# --------------------------------------------------------------------------- #
+def test_sharpe_gate_non_blocking_by_default():
+    # Default config (minimum_sharpe=0.0) records but never blocks on Sharpe.
+    report = StrategyValidator().validate(
+        good_input(in_sample=metrics(sharpe_ratio=0.1)), strategy_id="s"
+    )
+    r = _result(report, "minimum_sharpe")
+    assert r.blocking is False
+    assert r.status is RuleStatus.PASS          # present → recorded as a pass
+    assert report.approved is True
+
+
+def test_sharpe_gate_not_evaluated_when_unavailable_and_not_required():
+    report = StrategyValidator().validate(good_input(), strategy_id="s")
+    r = _result(report, "minimum_sharpe")
+    assert r.status is RuleStatus.NOT_EVALUATED  # no sharpe, not required
+    assert r.blocking is False
+
+
+def test_sharpe_gate_blocks_when_required_and_too_low():
+    cfg = StrategyValidationConfig(minimum_sharpe=0.5)
+    report = StrategyValidator(cfg).validate(
+        good_input(in_sample=metrics(sharpe_ratio=0.2)), strategy_id="s"
+    )
+    assert report.approved is False
+    assert "minimum_sharpe" in report.failed_rules
+
+
+def test_sharpe_gate_fails_when_required_but_missing():
+    cfg = StrategyValidationConfig(minimum_sharpe=0.5)
+    report = StrategyValidator(cfg).validate(
+        good_input(in_sample=metrics(sharpe_ratio=None)), strategy_id="s"
+    )
+    assert report.approved is False
+    assert "minimum_sharpe" in report.failed_rules
+
+
+def test_sharpe_gate_passes_when_required_and_met():
+    cfg = StrategyValidationConfig(minimum_sharpe=0.5)
+    report = StrategyValidator(cfg).validate(
+        good_input(in_sample=metrics(sharpe_ratio=1.2)), strategy_id="s"
+    )
+    assert report.approved is True
+    assert _result(report, "minimum_sharpe").status is RuleStatus.PASS
 
 
 # --------------------------------------------------------------------------- #

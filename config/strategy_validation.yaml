@@ -10,6 +10,7 @@ minimum_profit_factor: 1.2                   # gross profit / gross loss
 maximum_drawdown_pct: 15.0                   # peak-to-trough equity drawdown, percent
 maximum_largest_trade_contribution_pct: 25.0 # one trade may not dominate the profit
 minimum_expectancy: 0.0                      # average pnl per trade must be positive
+minimum_sharpe: 0.0                          # annualised Sharpe; 0.0 = record only (set >0 to gate, e.g. 0.5)
 require_stop_loss: true                      # every trade must carry a stop loss
 require_take_profit: true                    # every trade must carry a take profit
 require_out_of_sample_positive: true         # must be net-positive out of sample

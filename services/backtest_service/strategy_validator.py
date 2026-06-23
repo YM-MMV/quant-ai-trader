@@ -48,6 +48,9 @@ class StrategyValidationConfig(BaseModel):
     maximum_drawdown_pct: float = Field(15.0, ge=0)
     maximum_largest_trade_contribution_pct: float = Field(25.0, ge=0, le=100)
     minimum_expectancy: float = 0.0
+    # Opt-in: 0.0 records Sharpe without blocking; a positive value makes a
+    # minimum annualised Sharpe a *required* gate (missing evidence then fails).
+    minimum_sharpe: float = Field(0.0, ge=0)
     require_stop_loss: bool = True
     require_take_profit: bool = True
     require_out_of_sample_positive: bool = True
@@ -244,6 +247,24 @@ class StrategyValidator:
         add("minimum_expectancy", ins.expectancy >= cfg.minimum_expectancy, True,
             f"expectancy {ins.expectancy} vs required {cfg.minimum_expectancy}",
             observed=ins.expectancy, threshold=cfg.minimum_expectancy)
+
+        # 5b) Minimum annualised Sharpe — opt-in (blocks only when configured > 0)
+        sharpe = ins.sharpe_ratio
+        if cfg.minimum_sharpe > 0:
+            if sharpe is None:
+                add("minimum_sharpe", False, True,
+                    "annualised Sharpe required but unavailable (no period info)",
+                    threshold=cfg.minimum_sharpe)
+            else:
+                add("minimum_sharpe", sharpe >= cfg.minimum_sharpe, True,
+                    f"annualised Sharpe {sharpe:.3f} vs required {cfg.minimum_sharpe}",
+                    observed=round(sharpe, 6), threshold=cfg.minimum_sharpe)
+        else:
+            add("minimum_sharpe", True, False,
+                (f"annualised Sharpe {sharpe:.3f} (informational; not gated)"
+                 if sharpe is not None else "annualised Sharpe not available"),
+                observed=(round(sharpe, 6) if sharpe is not None else None),
+                evaluated=sharpe is not None)
 
         # 6) Largest-trade contribution
         contrib_pct = ins.largest_winner_contribution * 100.0
