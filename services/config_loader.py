@@ -154,6 +154,17 @@ class Settings(BaseSettings):
 
     openbb_pat: Optional[str] = Field(None, alias="OPENBB_PAT")
 
+    # --- AI brain (the LLM that reasons about the best move) --------------- #
+    # The model is configurable so the user can plug in their own API/model;
+    # it defaults to Anthropic Claude Opus 4.8. The API key is read from the
+    # environment (this repo forbids a committed .env — set it via env vars).
+    # ``ai_base_url`` lets an OpenAI-compatible endpoint stand in behind the
+    # same client interface without touching the loop.
+    ai_provider: str = Field("anthropic", alias="AI_PROVIDER")
+    ai_model: str = Field("claude-opus-4-8", alias="AI_MODEL")
+    ai_api_key: Optional[str] = Field(None, alias="AI_API_KEY")
+    ai_base_url: Optional[str] = Field(None, alias="AI_BASE_URL")
+
     @field_validator("symbol_allowlist_raw", mode="before")
     @classmethod
     def _coerce_none(cls, value: object) -> str:
