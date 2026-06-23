@@ -301,6 +301,23 @@ class MT5Gateway(ExecutionGateway):
                         payload={"bid": bid, "ask": ask})
         return quote
 
+    def min_stop_distance(self, symbol: str) -> float:
+        """Broker's minimum SL/TP distance from price, in *price* terms.
+
+        Stops closer than ``SYMBOL_TRADE_STOPS_LEVEL`` points are rejected by the
+        broker (retcode 10016, "Invalid stops"). Returns 0.0 when the level can't
+        be read, so callers fall back to their own distance.
+        """
+        self._require_connected()
+        client = self._require_mt5()
+        broker = self._broker_symbol(symbol)
+        info = client.symbol_info(broker)
+        if info is None:
+            return 0.0
+        level = float(getattr(info, "trade_stops_level", 0) or 0)
+        point = float(getattr(info, "point", 0.0) or 0.0)
+        return level * point
+
     # ------------------------------------------------------------------ #
     # Live locks
     # ------------------------------------------------------------------ #

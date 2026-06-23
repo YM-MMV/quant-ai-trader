@@ -56,6 +56,9 @@ class FakeMT5:
     def symbol_info_tick(self, broker):
         return SimpleNamespace(bid=1.09995, ask=1.10005)
 
+    def symbol_info(self, broker):
+        return None   # unknown by default; tests override for a real spec
+
     def order_check(self, request):
         self.order_check_calls.append(request)
         return SimpleNamespace(retcode=0, margin=110.0, comment="ok", balance=10_000.0)
@@ -263,6 +266,22 @@ def test_broker_symbol_reconciles_against_terminal_symbols():
     gw.connect()
     assert gw._broker_symbol("XAUUSD") == "XAUUSD"
     assert gw._broker_symbol("EURUSD") == "EURUSD"
+
+
+def test_min_stop_distance_from_symbol_info():
+    # stops level 50 points * point 0.001 = 0.05 in price terms.
+    fake = FakeMT5()
+    fake.symbol_info = lambda broker: SimpleNamespace(trade_stops_level=50, point=0.001)
+    gw, _ = gateway(fake_settings(allowlist=("XAUUSD",)), fake)
+    gw.connect()
+    assert gw.min_stop_distance("XAUUSD") == pytest.approx(0.05)
+
+
+def test_min_stop_distance_zero_when_unavailable():
+    # FakeMT5 has no symbol_info -> guarded path returns 0.0 (caller falls back).
+    gw, _ = gateway(fake_settings())
+    gw.connect()
+    assert gw.min_stop_distance("EURUSD") == 0.0
 
 
 # --------------------------------------------------------------------------- #

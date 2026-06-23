@@ -159,6 +159,31 @@ class DemoTrader:
         spec = get_symbol_spec(self.symbol)
         return spec.contract_size if spec else 1.0
 
+    def _live_levels(self, side: Side, ref_close: float, sig_sl: float, sig_tp: float):
+        """Re-anchor SL/TP to the LIVE quote for a market order.
+
+        The adapter's SL/TP are offsets from the (historical) bar close; a market
+        order fills at the current price, so apply the *distances* to the live
+        quote and enforce the broker's minimum stop distance. Returns
+        ``(entry, sl, tp)`` or ``None`` if no live price is available.
+        """
+        quote = self.gateway.get_quote(self.symbol)
+        entry = quote.ask if side is Side.BUY else quote.bid
+        if entry <= 0:
+            return None
+        spec = get_symbol_spec(self.symbol)
+        digits = spec.digits if spec else 5
+        min_dist = 0.0
+        try:
+            min_dist = self.gateway.min_stop_distance(self.symbol)
+        except Exception:  # noqa: BLE001 — fall back to the signal distances
+            pass
+        sl_dist = max(abs(sig_sl - ref_close), min_dist)
+        tp_dist = max(abs(sig_tp - ref_close), min_dist)
+        if side is Side.BUY:
+            return entry, round(entry - sl_dist, digits), round(entry + tp_dist, digits)
+        return entry, round(entry + sl_dist, digits), round(entry - tp_dist, digits)
+
     def _size(self, entry: float, stop_loss: float) -> tuple[float, str]:
         """Lots for a trade: the fixed --volume, else risk-budgeted to risk_pct."""
         if self.volume is not None:
@@ -230,10 +255,26 @@ class DemoTrader:
                 return lines
             lines.append(self._close(close, "reverse", now))
 
-        # 4) Size the trade (risk-budgeted unless a fixed volume was given).
+        # 4) Levels + reference price. For a LIVE market order, re-anchor SL/TP
+        #    to the current quote (the bar's levels are stale at fill time).
         sl = round(float(signal.suggested_stop_loss), 5)
         tp = round(float(signal.suggested_take_profit), 5)
-        lots, size_reason = self._size(close, sl)
+        ref = close
+        if self.mode is TradingMode.LIVE and self.gateway is not None:
+            live = self._live_levels(
+                side, close,
+                float(signal.suggested_stop_loss), float(signal.suggested_take_profit),
+            )
+            if live is None:
+                self.stats["sizing_skip"] += 1
+                lines.append(f"{now:%Y-%m-%d %H:%M}  {side.value:4} {self.symbol}  "
+                             f"SKIP: no live quote")
+                self._mark_equity(close)
+                return lines
+            ref, sl, tp = live
+
+        # 5) Size the trade (risk-budgeted unless a fixed volume was given).
+        lots, size_reason = self._size(ref, sl)
         if lots <= 0:
             self.stats["sizing_skip"] += 1
             lines.append(f"{now:%Y-%m-%d %H:%M}  {side.value:4} {self.symbol}  "
@@ -241,13 +282,13 @@ class DemoTrader:
             self._mark_equity(close)
             return lines
 
-        # 5) Propose → gate → route.
+        # 6) Propose → gate → route.
         intent = OrderIntent(
             symbol=self.symbol, side=side, order_type=OrderType.MARKET,
             volume=lots, stop_loss=sl, take_profit=tp,
             strategy_id=self.adapter.name,
         )
-        decision = self.risk.evaluate(intent, self.context(close), now=now)
+        decision = self.risk.evaluate(intent, self.context(ref), now=now)
 
         if not decision.approved:
             self.stats["rejected"] += 1
@@ -453,6 +494,11 @@ def main(argv=None) -> int:
     # --- replay loop -------------------------------------------------------- #
     start = max(args.warmup, adapter.get_metadata().min_candles)
     end = min(len(series), start + args.iterations)
+    if mode is TradingMode.LIVE:
+        # Live trades the present: act once on the most recent bar, never replay
+        # stale history (whose levels would be invalid against the live price).
+        start, end = max(start, len(series) - 1), len(series)
+        print("  LIVE: acting on the latest bar only (no historical replay)")
     print(f"  replaying bars {start}..{end} ({end - start} decisions)\n")
     has_ts = "timestamp" in series.columns
     for i in range(start, end):
