@@ -45,9 +45,10 @@ _SPECS: dict[str, SymbolSpec] = {
                          0.01, 100.0, 0.01, 3),
     "AUDUSD": SymbolSpec("AUDUSD", "AUDUSD", "forex", 0.0001, 0.00001, 100_000,
                          0.01, 100.0, 0.01, 5),
-    # Gold: 1.0 lot = 100 troy oz, quoted to 2 dp.
-    "XAUUSD": SymbolSpec("XAUUSD", "GOLD", "metal", 0.01, 0.01, 100,
-                         0.01, 50.0, 0.01, 2),
+    # Gold: 1.0 lot = 100 troy oz. Quoted to 3 dp on most MT5 brokers
+    # (point = 0.001; 1 pip = 0.01 = 10 points).
+    "XAUUSD": SymbolSpec("XAUUSD", "GOLD", "metal", 0.01, 0.001, 100,
+                         0.01, 50.0, 0.01, 3),
     # Crypto example: 1.0 lot = 1 coin.
     "BTCUSD": SymbolSpec("BTCUSD", "BTCUSD", "crypto", 0.01, 0.01, 1,
                          0.01, 10.0, 0.01, 2),

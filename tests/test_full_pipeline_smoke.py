@@ -255,13 +255,37 @@ def test_full_pipeline_smoke(tmp_path):
 # Constraint guard: the pipeline never touches MT5 / network / secrets
 # --------------------------------------------------------------------------- #
 def test_smoke_pipeline_imports_no_broker_or_network():
-    """Sanity check that the smoke pipeline pulls in no broker module.
+    """The smoke pipeline must import no broker SDK — even when MetaTrader5 is
+    installed on the host.
 
-    The real MT5 package is never imported by any pipeline stage above — paper
-    execution, the mock gateway, the mock Kronos, and the local backtester are
-    all pure / mocked. (``requests``/``httpx`` may be present from unrelated test
-    dependencies, so only the broker SDK is asserted absent.)
+    Checked in a *clean subprocess* so this is robust to test ordering: an
+    unrelated test importing ``services.data_service.mt5_data`` (which lazily
+    imports MetaTrader5 when present) cannot pollute this assertion. The
+    subprocess imports every stage of the smoke pipeline and asserts the broker
+    SDK never entered ``sys.modules``.
     """
+    import os
+    import subprocess
     import sys
+    from pathlib import Path
 
-    assert "MetaTrader5" not in sys.modules, "smoke test must never import MT5"
+    root = Path(__file__).resolve().parents[1]
+    code = (
+        "import sys; "
+        "import services.backtest_service.simple_backtester; "
+        "import services.backtest_service.strategy_validator; "
+        "import services.data_service.features, services.data_service.sample_data; "
+        "import services.execution_service.paper_execution; "
+        "import services.execution_service.audit_log, services.execution_service.trade_log; "
+        "import services.kronos_service, services.risk_service.risk_manager; "
+        "import services.strategy_service.adapters, services.strategy_service.registry; "
+        "assert 'MetaTrader5' not in sys.modules, 'smoke pipeline must never import MT5'"
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=root,
+        env={**os.environ, "PYTHONPATH": str(root)},
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0, proc.stderr or proc.stdout

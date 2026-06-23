@@ -62,6 +62,7 @@ def _default_config() -> RiskConfig:
         require_stop_loss=True,
         require_take_profit=True,
         max_daily_loss=100.0,
+        max_daily_loss_pct=0.0,
         max_open_trades=3,
         max_spread_points=30,
         max_risk_per_trade_pct=1.0,
@@ -141,8 +142,12 @@ class RiskManager:
                   f"{cfg.max_risk_per_trade_pct}%")
 
         # -- exposure / frequency ------------------------------------------ #
-        check("daily_loss_limit", context.realized_daily_loss < cfg.max_daily_loss,
-              f"daily loss {context.realized_daily_loss} hit limit {cfg.max_daily_loss}")
+        daily_limit = self._daily_loss_limit(context)
+        if daily_limit is None:
+            check("daily_loss_limit", True, "no daily-loss limit configured")
+        else:
+            check("daily_loss_limit", context.realized_daily_loss < daily_limit,
+                  f"daily loss {context.realized_daily_loss} hit limit {daily_limit:.2f}")
         check("max_open_trades", len(context.open_trades) < cfg.max_open_trades,
               f"open trades {len(context.open_trades)} at limit {cfg.max_open_trades}")
         check("max_trades_per_day", context.trades_today < cfg.max_trades_per_day,
@@ -176,6 +181,23 @@ class RiskManager:
         )
 
     # ------------------------------------------------------------------ #
+    def _daily_loss_limit(self, context: RiskContext) -> Optional[float]:
+        """Effective daily-loss limit: the tighter of the absolute cap and the
+        balance-relative cap.
+
+        Each cap is disabled when its config value is 0; the percent cap also
+        needs a positive balance. Returns ``None`` when neither is configured
+        (no daily-loss limit), so the manager treats the check as a pass.
+        """
+        cfg = self.config
+        limits: list[float] = []
+        if cfg.max_daily_loss > 0:
+            limits.append(cfg.max_daily_loss)
+        pct = getattr(cfg, "max_daily_loss_pct", 0.0)
+        if pct > 0 and context.account_balance > 0:
+            limits.append(pct / 100.0 * context.account_balance)
+        return min(limits) if limits else None
+
     @staticmethod
     def _risk_pct(intent, context, spec, stop_loss, volume) -> Optional[float]:
         """Per-trade risk as a percent of balance, or None if not computable."""

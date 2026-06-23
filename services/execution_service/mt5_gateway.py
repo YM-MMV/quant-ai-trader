@@ -116,6 +116,7 @@ class MT5Gateway(ExecutionGateway):
         self.deviation = deviation
         self.magic = magic
         self._connected = False
+        self._available: list[str] = []   # broker symbol names, filled on connect
         self.events: list[GatewayEvent] = []
 
     # ------------------------------------------------------------------ #
@@ -147,6 +148,23 @@ class MT5Gateway(ExecutionGateway):
         return env_allow or list(self._get_symbols_config().allowlist)
 
     def _broker_symbol(self, symbol: str) -> str:
+        """Resolve the canonical symbol to this broker's actual name.
+
+        Once connected, reconcile against the terminal's real symbol list (so
+        e.g. ``XAUUSD`` routes as ``XAUUSD`` on a broker that exposes it that
+        way, even though the static spec alias is ``GOLD``). Falls back to the
+        static spec alias when not connected or resolution fails.
+        """
+        if self._available:
+            try:
+                from services.data_service.mt5_data import resolve_broker_symbol
+                return resolve_broker_symbol(
+                    symbol,
+                    available=self._available,
+                    symbols_config=self._get_symbols_config(),
+                )
+            except Exception:  # noqa: BLE001 — fall back to the static alias
+                pass
         spec = get_symbol_spec(symbol)
         return spec.broker_alias if spec else symbol
 
@@ -208,6 +226,12 @@ class MT5Gateway(ExecutionGateway):
                             payload={"last_error": _safe(client, "last_error")})
             raise MT5ConnectionError(f"mt5.initialize failed: {_safe(client, 'last_error')}")
         self._connected = True
+        # Reconcile broker symbol names against the terminal (best-effort).
+        try:
+            raw = client.symbols_get()
+            self._available = [s.name for s in (raw or [])]
+        except Exception:  # noqa: BLE001 — symbol reconciliation is optional
+            self._available = []
         # Never log credentials — server name only.
         self._log_event("connect", status="ok", detail=f"connected to {server or 'terminal'}")
         return True
@@ -276,6 +300,23 @@ class MT5Gateway(ExecutionGateway):
         self._log_event("get_quote", status="ok", detail=symbol,
                         payload={"bid": bid, "ask": ask})
         return quote
+
+    def min_stop_distance(self, symbol: str) -> float:
+        """Broker's minimum SL/TP distance from price, in *price* terms.
+
+        Stops closer than ``SYMBOL_TRADE_STOPS_LEVEL`` points are rejected by the
+        broker (retcode 10016, "Invalid stops"). Returns 0.0 when the level can't
+        be read, so callers fall back to their own distance.
+        """
+        self._require_connected()
+        client = self._require_mt5()
+        broker = self._broker_symbol(symbol)
+        info = client.symbol_info(broker)
+        if info is None:
+            return 0.0
+        level = float(getattr(info, "trade_stops_level", 0) or 0)
+        point = float(getattr(info, "point", 0.0) or 0.0)
+        return level * point
 
     # ------------------------------------------------------------------ #
     # Live locks

@@ -67,7 +67,8 @@ class RiskConfig(_Config):
 
     require_stop_loss: bool = True
     require_take_profit: bool = True
-    max_daily_loss: float = Field(..., ge=0)
+    max_daily_loss: float = Field(..., ge=0)          # absolute cap (account ccy); 0 = disabled
+    max_daily_loss_pct: float = Field(0.0, ge=0)      # cap as % of balance; 0 = disabled
     max_open_trades: int = Field(..., ge=0)
     max_spread_points: int = Field(..., ge=0)
     max_risk_per_trade_pct: float = Field(..., ge=0, le=100)

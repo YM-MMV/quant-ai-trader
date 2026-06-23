@@ -55,6 +55,7 @@ def test_risk_config_loads():
     assert cfg.require_take_profit is True
     assert cfg.max_open_trades >= 0
     assert cfg.kill_switch_enabled is True
+    assert cfg.max_daily_loss_pct >= 0          # balance-relative daily-loss cap
 
 
 def test_timeframes_config_loads():
