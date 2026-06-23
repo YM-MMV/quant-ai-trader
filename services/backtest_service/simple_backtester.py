@@ -33,6 +33,27 @@ from services.data_service.sessions import label_sessions
 
 REQUIRED_COLUMNS = ("open", "high", "low", "close")
 
+# Calendar minutes in a year — used to annualise the Sharpe ratio from the
+# observed bar interval (24/7 calendar basis; honest and timeframe-agnostic).
+_MINUTES_PER_YEAR = 365.25 * 24 * 60
+
+
+def _infer_periods_per_year(times: Optional[pd.Series], n: int) -> Optional[float]:
+    """Estimate bars-per-year from the median spacing of candle timestamps.
+
+    Returns ``None`` when timestamps are absent or unusable, so the metrics layer
+    leaves the annualised Sharpe ``None`` rather than guessing a wrong factor.
+    """
+    if times is None or n < 3:
+        return None
+    deltas = times.diff().dropna()
+    if deltas.empty:
+        return None
+    median_minutes = deltas.dt.total_seconds().median() / 60.0
+    if not median_minutes or median_minutes <= 0:
+        return None
+    return _MINUTES_PER_YEAR / median_minutes
+
 
 class Direction(str, Enum):
     BUY = "BUY"
@@ -180,7 +201,10 @@ class SimpleBacktester:
             symbol=symbol,
             trades=trades,
             equity_curve=equity_curve,
-            metrics=compute_metrics(trades, equity_curve),
+            metrics=compute_metrics(
+                trades, equity_curve,
+                periods_per_year=_infer_periods_per_year(times, n),
+            ),
             rejected_signals=rejected,
             rejected_no_stop=rejected_no_stop,
             n_bars=n,

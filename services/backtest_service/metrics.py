@@ -34,7 +34,8 @@ class BacktestMetrics:
     expectancy: float = 0.0
     max_drawdown: float = 0.0          # absolute, in equity units
     max_drawdown_pct: float = 0.0      # fraction of running peak
-    sharpe_placeholder: Optional[float] = None
+    sharpe_placeholder: Optional[float] = None  # per-bar mean/std (un-annualised)
+    sharpe_ratio: Optional[float] = None        # annualised; None if no period info
     largest_winner_contribution: float = 0.0  # biggest win / gross profit
     max_consecutive_losses: int = 0
     average_holding_bars: float = 0.0
@@ -58,8 +59,8 @@ def max_drawdown(equity_curve: Sequence[float]) -> tuple[float, float]:
     return float(abs_dd), float(pct_dd)
 
 
-def _sharpe_from_equity(equity_curve: Sequence[float]) -> Optional[float]:
-    """Placeholder Sharpe: mean/std of per-bar equity returns (no annualising)."""
+def _per_bar_sharpe(equity_curve: Sequence[float]) -> Optional[float]:
+    """Per-bar Sharpe: mean/std of per-bar equity returns (no annualising)."""
     if len(equity_curve) < 3:
         return None
     rets = []
@@ -76,6 +77,25 @@ def _sharpe_from_equity(equity_curve: Sequence[float]) -> Optional[float]:
     return float(mean / std)
 
 
+# Backwards-compatible alias for the original placeholder name.
+_sharpe_from_equity = _per_bar_sharpe
+
+
+def annualised_sharpe(
+    equity_curve: Sequence[float], periods_per_year: Optional[float]
+) -> Optional[float]:
+    """Annualise the per-bar Sharpe by ``sqrt(periods_per_year)``.
+
+    Returns ``None`` when the per-bar Sharpe is undefined (flat/too-short equity)
+    or when ``periods_per_year`` is unknown — we never fabricate an annualisation
+    factor, because a wrong one is worse than an honest ``None``.
+    """
+    per_bar = _per_bar_sharpe(equity_curve)
+    if per_bar is None or not periods_per_year or periods_per_year <= 0:
+        return None
+    return float(per_bar * math.sqrt(periods_per_year))
+
+
 def _max_consecutive_losses(pnls: Sequence[float]) -> int:
     streak = best = 0
     for pnl in pnls:
@@ -88,13 +108,26 @@ def _max_consecutive_losses(pnls: Sequence[float]) -> int:
 
 
 def compute_metrics(
-    trades: Sequence, equity_curve: Sequence[float]
+    trades: Sequence,
+    equity_curve: Sequence[float],
+    *,
+    periods_per_year: Optional[float] = None,
 ) -> BacktestMetrics:
-    """Compute :class:`BacktestMetrics` from closed trades + an equity curve."""
+    """Compute :class:`BacktestMetrics` from closed trades + an equity curve.
+
+    ``periods_per_year`` (e.g. ~6_200 for H1 forex, ~35_000 for M15) enables a
+    proper annualised ``sharpe_ratio``. When omitted, only the un-annualised
+    ``sharpe_placeholder`` is populated and ``sharpe_ratio`` stays ``None``.
+    """
     n = len(trades)
     if n == 0:
         abs_dd, pct_dd = max_drawdown(equity_curve) if equity_curve else (0.0, 0.0)
-        return BacktestMetrics(max_drawdown=abs_dd, max_drawdown_pct=pct_dd)
+        return BacktestMetrics(
+            max_drawdown=abs_dd,
+            max_drawdown_pct=pct_dd,
+            sharpe_placeholder=_per_bar_sharpe(equity_curve),
+            sharpe_ratio=annualised_sharpe(equity_curve, periods_per_year),
+        )
 
     pnls = [float(t.pnl) for t in trades]
     rs = [float(t.r_multiple) for t in trades]
@@ -126,11 +159,17 @@ def compute_metrics(
         expectancy=round(expectancy, 6),
         max_drawdown=round(abs_dd, 6),
         max_drawdown_pct=round(pct_dd, 6),
-        sharpe_placeholder=_sharpe_from_equity(equity_curve),
+        sharpe_placeholder=_per_bar_sharpe(equity_curve),
+        sharpe_ratio=annualised_sharpe(equity_curve, periods_per_year),
         largest_winner_contribution=round(largest_winner_contribution, 6),
         max_consecutive_losses=_max_consecutive_losses(pnls),
         average_holding_bars=round(sum(bars) / n, 6),
     )
 
 
-__all__ = ["BacktestMetrics", "compute_metrics", "max_drawdown"]
+__all__ = [
+    "BacktestMetrics",
+    "compute_metrics",
+    "max_drawdown",
+    "annualised_sharpe",
+]

@@ -1,8 +1,11 @@
 """Tests for backtest metrics (pure functions, hand-built trades)."""
 from types import SimpleNamespace
 
+import math
+
 from services.backtest_service.metrics import (
     BacktestMetrics,
+    annualised_sharpe,
     compute_metrics,
     max_drawdown,
 )
@@ -89,3 +92,29 @@ def test_metrics_to_dict_roundtrip():
     m = compute_metrics([_trade(10, 1.0)], [100, 110])
     d = m.to_dict()
     assert d["total_trades"] == 1 and d["net_profit"] == 10.0
+
+
+# --------------------------------------------------------------------------- #
+# annualised Sharpe
+# --------------------------------------------------------------------------- #
+def test_sharpe_ratio_none_without_periods_per_year():
+    # Back-compat: callers that don't pass periods_per_year get no annualised value.
+    m = compute_metrics([_trade(1, 1.0)], [100, 101, 103, 102, 105])
+    assert m.sharpe_placeholder is not None
+    assert m.sharpe_ratio is None
+
+
+def test_sharpe_ratio_is_per_bar_times_sqrt_periods():
+    equity = [100, 101, 103, 102, 105]
+    ppy = 6200.0
+    m = compute_metrics([_trade(1, 1.0)], equity, periods_per_year=ppy)
+    assert m.sharpe_ratio is not None
+    assert math.isclose(
+        m.sharpe_ratio, m.sharpe_placeholder * math.sqrt(ppy), rel_tol=1e-9
+    )
+
+
+def test_annualised_sharpe_none_for_flat_or_unknown_period():
+    assert annualised_sharpe([100, 100, 100, 100], 6200.0) is None   # flat → per-bar None
+    assert annualised_sharpe([100, 101, 103, 105], None) is None      # no period info
+    assert annualised_sharpe([100, 101, 103, 105], 0) is None         # invalid period
