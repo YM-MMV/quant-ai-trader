@@ -52,6 +52,13 @@ openbb = [
 quantdinger = [
     "requests>=2.31",
 ]
+# AI brain (M29). The LLM that reasons over the tools and proposes the move.
+# Optional; the loop runs with --mock-ai (no key, no network) for tests/demos.
+# Install with `pip install -e .[ai]`. The model is configurable via AI_MODEL /
+# AI_BASE_URL, defaulting to Anthropic Claude Opus 4.8.
+ai = [
+    "anthropic>=0.40",
+]
 # WorldMonitor integration (M25). Optional macro/news risk *context* only —
 # never a trading signal, and disabled by default. The real client talks HTTP
 # via `requests`. Tests use the disabled/mock client or an injected session, so

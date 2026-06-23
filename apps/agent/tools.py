@@ -65,14 +65,62 @@ DEFAULT_INVENTORY_PATH = (
 # A strategy reference is either a backtester Strategy callable or an adapter name.
 StrategyRef = Union[str, Strategy]
 
+# Candle sources the research tools accept. ``sample`` is deterministic/offline
+# (the safe default that keeps tests reproducible); ``mt5`` pulls *real* candles
+# from a running MetaTrader 5 terminal so the AI can reason over live market data.
+CandleSource = str  # "sample" | "mt5"
+
 
 # --------------------------------------------------------------------------- #
 # Internal helpers
 # --------------------------------------------------------------------------- #
-def _candle_frame(symbol: str, timeframe: str, n: int, *, seed: int = 42) -> pd.DataFrame:
-    """Deterministic, offline candles (research/paper safe — never live data)."""
+def _mt5_candle_frame(symbol: str, timeframe: str, n: int) -> pd.DataFrame:
+    """Pull the most recent ``n`` real candles from a running MT5 terminal.
+
+    Read-only: this only fetches data (``get_rates`` never sends an order). The
+    lookback window is padded generously (markets close overnight/weekends) and
+    the tail is trimmed to exactly ``n`` bars. Requires the MetaTrader5 package
+    and a logged-in terminal — otherwise ``mt5_data`` raises a clear error.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    from services.data_service.mt5_data import connect_to_mt5, get_rates
+    from services.data_service.sample_data import TIMEFRAME_MINUTES
+
+    minutes = TIMEFRAME_MINUTES.get(timeframe.upper(), 60)
+    # ~3x padding for non-trading hours + a small floor so short requests still
+    # span enough calendar time to return ``n`` bars.
+    span_minutes = max(int(n * minutes * 3), minutes * 64)
+    end = datetime.now(timezone.utc).replace(tzinfo=None)
+    start = end - timedelta(minutes=span_minutes) - timedelta(days=3)
+
+    connect_to_mt5()
+    df = get_rates(symbol, timeframe, start, end)
+    if "timestamp" in df.columns:
+        df = df.sort_values("timestamp").reset_index(drop=True)
+    return df.tail(n).reset_index(drop=True)
+
+
+def _candle_frame(
+    symbol: str,
+    timeframe: str,
+    n: int,
+    *,
+    seed: int = 42,
+    source: CandleSource = "sample",
+) -> pd.DataFrame:
+    """Candles for research/backtest.
+
+    ``source="sample"`` (default) returns deterministic offline candles — the
+    safe, reproducible path used by tests and demos. ``source="mt5"`` returns
+    real, recent candles from a running MetaTrader 5 terminal (data only).
+    """
     if n <= 0:
         raise ValueError("n must be positive")
+    if source == "mt5":
+        return _mt5_candle_frame(symbol, timeframe, n)
+    if source != "sample":
+        raise ValueError(f"unknown candle source {source!r}; use 'sample' or 'mt5'")
     return generate_candles(symbol, timeframe, n=n, seed=seed)
 
 
@@ -180,10 +228,15 @@ def _coerce_intent(intent: Union[OrderIntent, dict[str, Any]]) -> OrderIntent:
 # Research tools
 # --------------------------------------------------------------------------- #
 def get_candles(
-    symbol: str, timeframe: str = "H1", n: int = 200, *, seed: int = 42
+    symbol: str, timeframe: str = "H1", n: int = 200, *, seed: int = 42,
+    source: CandleSource = "sample",
 ) -> dict[str, Any]:
-    """Return recent OHLCV candles for ``symbol``/``timeframe`` (offline, research)."""
-    df = _candle_frame(symbol, timeframe, n, seed=seed)
+    """Return recent OHLCV candles for ``symbol``/``timeframe``.
+
+    ``source="sample"`` is deterministic/offline; ``source="mt5"`` pulls real,
+    recent candles from a running MetaTrader 5 terminal.
+    """
+    df = _candle_frame(symbol, timeframe, n, seed=seed, source=source)
     candles = [
         {
             "timestamp": ts.isoformat() if hasattr(ts, "isoformat") else str(ts),
@@ -197,10 +250,14 @@ def get_candles(
 
 
 def get_market_features(
-    symbol: str, timeframe: str = "H1", n: int = 200, *, seed: int = 42
+    symbol: str, timeframe: str = "H1", n: int = 200, *, seed: int = 42,
+    source: CandleSource = "sample",
 ) -> dict[str, Any]:
-    """Compute causal technical features and return the latest (non-NaN) row."""
-    df = _candle_frame(symbol, timeframe, n, seed=seed)
+    """Compute causal technical features and return the latest (non-NaN) row.
+
+    ``source="mt5"`` computes the features on real, recent terminal candles.
+    """
+    df = _candle_frame(symbol, timeframe, n, seed=seed, source=source)
     feats = compute_features(df)
     last = feats.iloc[-1]
     features: dict[str, Any] = {}
@@ -229,9 +286,10 @@ def get_kronos_prediction(
     pred_len: int = 1,
     mode: str = "mock",
     seed: int = 42,
+    source: CandleSource = "sample",
 ) -> dict[str, Any]:
     """Optional Kronos forecast (advisory). Defaults to the deterministic mock."""
-    df = _candle_frame(symbol, timeframe, n, seed=seed)
+    df = _candle_frame(symbol, timeframe, n, seed=seed, source=source)
     predictor = load_kronos(mode=mode)
     pred = predictor.predict(
         df, symbol=symbol, timeframe=timeframe, lookback=lookback, pred_len=pred_len
@@ -289,9 +347,14 @@ def run_backtest(
     seed: int = 42,
     stop_fraction: float = 0.01,
     reward_ratio: float = 2.0,
+    source: CandleSource = "sample",
 ) -> dict[str, Any]:
-    """Backtest ``strategy`` (adapter name or callable) with realistic friction."""
-    df = _candle_frame(symbol, timeframe, n, seed=seed)
+    """Backtest ``strategy`` (adapter name or callable) with realistic friction.
+
+    ``source="mt5"`` backtests on real, recent terminal candles instead of the
+    deterministic sample series.
+    """
+    df = _candle_frame(symbol, timeframe, n, seed=seed, source=source)
     fn = _resolve_strategy(strategy, stop_fraction=stop_fraction, reward_ratio=reward_ratio)
     report = SimpleBacktester(BacktestConfig()).run(df, fn)
     return {
@@ -353,9 +416,13 @@ def validate_strategy(
     seed: int = 42,
     stop_fraction: float = 0.01,
     reward_ratio: float = 2.0,
+    source: CandleSource = "sample",
 ) -> dict[str, Any]:
-    """Run the approval gates against a strategy's in/out-of-sample backtests."""
-    df = _candle_frame(symbol, timeframe, n, seed=seed)
+    """Run the approval gates against a strategy's in/out-of-sample backtests.
+
+    ``source="mt5"`` validates on real, recent terminal candles.
+    """
+    df = _candle_frame(symbol, timeframe, n, seed=seed, source=source)
     split = int(len(df) * (1.0 - out_of_sample_fraction))
     candles_in = df.iloc[:split].reset_index(drop=True)
     candles_out = df.iloc[split:].reset_index(drop=True)
