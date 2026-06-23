@@ -242,6 +242,10 @@ class DemoTrader:
         if not signal.is_actionable:
             self.stats["hold"] += 1
             self._mark_equity(close)
+            # Surface *why* we held. A swallowed brain error (e.g. a bad API key)
+            # fails safe to a hold with the error in ``reason`` — print it so it
+            # never masquerades as a quiet "no edge" hold again.
+            lines.append(f"{now:%Y-%m-%d %H:%M}  HOLD {self.symbol}: {signal.reason}")
             return lines
         self.stats["signal"] += 1
 
