@@ -83,8 +83,13 @@ def load_series(args) -> pd.DataFrame:
         return df.sort_values("timestamp").reset_index(drop=True) if "timestamp" in df else df
 
     if args.source == "mt5":
-        # Real terminal: pull a recent window once, then replay its tail.
-        from services.data_service.mt5_data import get_rates
+        # Real terminal: attach (auto-attach to the running, logged-in terminal),
+        # make sure the symbol is in Market Watch, then pull a recent window and
+        # replay its tail. Read-only — get_rates never sends an order.
+        from services.data_service.mt5_data import connect_to_mt5, get_rates, mt5 as _mt5
+        connect_to_mt5()
+        if _mt5 is not None:
+            _mt5.symbol_select(args.symbol, True)
         end = datetime.now(timezone.utc).replace(tzinfo=None)
         start = end - timedelta(days=args.mt5_days)
         df = get_rates(args.symbol, args.timeframe, start, end)

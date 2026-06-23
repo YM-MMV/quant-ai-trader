@@ -21,8 +21,8 @@ symbols:
   XAUUSD:
     asset_class: metal
     broker_aliases: [XAUUSD, GOLD, "XAUUSD."]
-    digits: 2
-    point: 0.01
+    digits: 3
+    point: 0.001
     enabled: true
   BTCUSD:
     asset_class: crypto
