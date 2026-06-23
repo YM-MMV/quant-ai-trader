@@ -242,6 +242,29 @@ def test_get_quote():
     assert q.ask > q.bid
 
 
+def test_broker_symbol_falls_back_to_static_alias_without_terminal_list():
+    # FakeMT5 has no symbols_get -> _available stays empty -> static spec alias.
+    gw, _ = gateway(fake_settings())
+    gw.connect()
+    assert gw._broker_symbol("XAUUSD") == "GOLD"
+
+
+def test_broker_symbol_reconciles_against_terminal_symbols():
+    # A broker that exposes gold as XAUUSD (not GOLD): the gateway must route to
+    # the name the terminal actually has, reconciled from symbols_get().
+    fake = FakeMT5()
+    fake.symbols_get = lambda: [
+        SimpleNamespace(name=n) for n in ("EURUSD", "XAUUSD", "GBPUSD")
+    ]
+    gw, _ = gateway(
+        fake_settings(mode=TradingMode.LIVE, allow_live=True, allowlist=("XAUUSD",)),
+        fake,
+    )
+    gw.connect()
+    assert gw._broker_symbol("XAUUSD") == "XAUUSD"
+    assert gw._broker_symbol("EURUSD") == "EURUSD"
+
+
 # --------------------------------------------------------------------------- #
 # order_send must not be exposed outside this gateway
 # --------------------------------------------------------------------------- #
