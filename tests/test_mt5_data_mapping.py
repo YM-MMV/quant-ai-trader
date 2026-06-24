@@ -47,6 +47,7 @@ def fake_mt5(monkeypatch):
     client.initialize.return_value = True
     client.last_error.return_value = (0, "ok")
     client.copy_rates_range.return_value = _RATES
+    client.copy_rates_from_pos.return_value = _RATES
     client.symbol_info_tick.return_value = SimpleNamespace(
         time=1704070800, bid=1.1058, ask=1.1060, last=1.1059, volume=3,
     )
@@ -210,6 +211,30 @@ def test_get_rates_unknown_timeframe_raises(fake_mt5):
     with pytest.raises(ValueError):
         mt5_data.get_rates("EURUSD", "H7", datetime(2024, 1, 1),
                            datetime(2024, 1, 2))
+
+
+def test_get_latest_rates_uses_copy_rates_from_pos(fake_mt5):
+    df = mt5_data.get_latest_rates("XAUUSD", "M5", 200)
+    assert list(df.columns) == list(REQUIRED_COLUMNS)
+    assert len(df) == 2
+    # Fetched by position from the newest bar — no UTC start/end range.
+    args, _ = fake_mt5.copy_rates_from_pos.call_args
+    assert args[0] == "GOLD"               # broker alias resolved
+    assert args[1] == fake_mt5.TIMEFRAME_M5
+    assert args[2] == 0                    # start_pos = newest bar
+    assert args[3] == 200                  # count
+    fake_mt5.copy_rates_range.assert_not_called()
+
+
+def test_get_latest_rates_no_data_raises(fake_mt5):
+    fake_mt5.copy_rates_from_pos.return_value = np.array([], dtype=_RATE_DTYPE)
+    with pytest.raises(mt5_data.MT5DataError):
+        mt5_data.get_latest_rates("EURUSD", "H1", 100)
+
+
+def test_get_latest_rates_rejects_nonpositive_count(fake_mt5):
+    with pytest.raises(ValueError):
+        mt5_data.get_latest_rates("EURUSD", "H1", 0)
 
 
 def test_get_latest_tick(fake_mt5):

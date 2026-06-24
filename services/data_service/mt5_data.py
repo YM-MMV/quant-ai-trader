@@ -226,6 +226,41 @@ def get_rates(
     return standardise_mt5_rates(rates, symbol=symbol, timeframe=timeframe, source=source)
 
 
+def get_latest_rates(
+    symbol: str,
+    timeframe: str,
+    count: int,
+    *,
+    available: Optional[list[str]] = None,
+    symbols_config: Optional[SymbolsConfig] = None,
+    source: str = DEFAULT_SOURCE,
+) -> pd.DataFrame:
+    """Most-recent ``count`` candles for ``symbol`` via ``copy_rates_from_pos``.
+
+    Unlike :func:`get_rates`, this asks the terminal for the latest ``count``
+    bars *by position* (``start_pos=0`` is the newest bar) rather than a UTC
+    ``start..end`` window. That sidesteps the broker server-time vs UTC offset
+    entirely — the always-on loop just wants "the last N bars", and a range
+    query built from ``datetime.utcnow()`` can silently drop or misalign bars
+    when the broker server runs on e.g. UTC+2/+3. Raises :class:`MT5DataError`
+    if the terminal returns nothing.
+    """
+    if count <= 0:
+        raise ValueError("count must be > 0")
+    client = _require_mt5()
+    broker = resolve_broker_symbol(
+        symbol, available=available, symbols_config=symbols_config
+    )
+    tf = _mt5_timeframe(client, timeframe)
+    rates = client.copy_rates_from_pos(broker, tf, 0, count)
+    if rates is None or len(rates) == 0:
+        raise MT5DataError(
+            f"no rates for {symbol} ({broker}) {timeframe} (latest {count}): "
+            f"{client.last_error()}"
+        )
+    return standardise_mt5_rates(rates, symbol=symbol, timeframe=timeframe, source=source)
+
+
 def get_latest_tick(
     symbol: str,
     *,
@@ -323,6 +358,7 @@ __all__ = [
     "get_symbols",
     "resolve_broker_symbol",
     "get_rates",
+    "get_latest_rates",
     "get_latest_tick",
     "standardise_mt5_rates",
     "save_rates_to_parquet",

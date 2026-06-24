@@ -1,11 +1,13 @@
 """Tests for the always-on AI trade loop (M29) — offline, mock brain + gateway."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
+
+import pandas as pd
 
 from apps.agent.ai_decider import AIDecider
 from apps.agent.llm_runner import LLMResponse, MockLLMClient, ToolUseBlock
-from scripts.ai_trade_loop import LiveTrader, main
+from scripts.ai_trade_loop import LiveTrader, main, _bar_age, _is_stale
 from services.config_loader import load_risk_config
 from services.data_service.sample_data import generate_candles
 from services.execution_service.mock_mt5_gateway import MockMT5Gateway
@@ -79,3 +81,24 @@ def test_demo_mode_refused_without_locks(capsys):
     rc = main(["--once", "--source", "sample", "--mock-ai", "--symbol", "XAUUSD", "--mode", "demo"])
     assert rc == 3
     assert "refused" in capsys.readouterr().out.lower()
+
+
+def _bar(ts: datetime) -> pd.DataFrame:
+    return pd.DataFrame({"timestamp": [pd.Timestamp(ts)], "close": [1.0]})
+
+
+def test_freshness_guard_flags_stale_but_not_fresh_bars():
+    now = datetime(2026, 6, 24, 15, 48)
+    # A bar minutes old on the current timeframe is fine.
+    assert _is_stale(_bar(now - timedelta(minutes=4)), "M5", now=now) is False
+    # An 18h-old bar (disconnected terminal serving cached history) is stale.
+    assert _is_stale(_bar(now - timedelta(hours=18)), "M5", now=now) is True
+
+
+def test_freshness_guard_absorbs_broker_server_offset():
+    # Bar timestamps are broker-server time (often UTC+2/+3), so a live bar can
+    # look a few hours old — even future-dated. The floor must not trip on that.
+    now = datetime(2026, 6, 24, 15, 48)
+    assert _is_stale(_bar(now + timedelta(hours=3)), "M5", now=now) is False
+    assert _is_stale(_bar(now - timedelta(hours=3)), "M5", now=now) is False
+    assert _bar_age(_bar(now - timedelta(hours=2)), now=now) == timedelta(hours=2)

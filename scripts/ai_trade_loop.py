@@ -249,18 +249,63 @@ class LiveTrader:
 # --------------------------------------------------------------------------- #
 # Data
 # --------------------------------------------------------------------------- #
-def _fetch_mt5_window(symbol: str, timeframe: str, n: int, mt5_days: int) -> pd.DataFrame:
-    """Most-recent ``n`` real candles from a running terminal (read-only)."""
-    from services.data_service.mt5_data import connect_to_mt5, get_rates, mt5 as _mt5
+def _fetch_mt5_window(symbol: str, timeframe: str, n: int) -> pd.DataFrame:
+    """Most-recent ``n`` real candles from a running terminal (read-only).
+
+    Uses ``copy_rates_from_pos`` (newest ``n`` bars *by position*) so the
+    broker's server-time vs UTC offset can never drop or misalign the latest
+    bar — the loop only ever wants "the last N candles".
+    """
+    from services.data_service.mt5_data import connect_to_mt5, get_latest_rates, mt5 as _mt5
     connect_to_mt5()
     if _mt5 is not None:
         _mt5.symbol_select(symbol, True)
-    end = datetime.now(timezone.utc).replace(tzinfo=None)
-    start = end - timedelta(days=mt5_days)
-    df = get_rates(symbol, timeframe, start, end)
+    df = get_latest_rates(symbol, timeframe, n)
     if "timestamp" in df.columns:
         df = df.sort_values("timestamp").reset_index(drop=True)
-    return df.tail(n).reset_index(drop=True)
+    return df.reset_index(drop=True)
+
+
+# A live feed's newest bar is at most ~1 period old. Brokers also stamp bars in
+# server time (commonly UTC+2/+3), so we measure age against a generous floor
+# that absorbs that offset: a live feed never trips it, but a disconnected
+# terminal serving cached history (bars hours/days old) does.
+STALE_FLOOR = timedelta(hours=6)
+
+
+def _bar_age(window: pd.DataFrame, now: Optional[datetime] = None) -> timedelta:
+    """Age of the newest bar relative to wall-clock UTC (naive)."""
+    now = now if now is not None else datetime.now(timezone.utc).replace(tzinfo=None)
+    last = window["timestamp"].iloc[-1]
+    last = last.to_pydatetime() if hasattr(last, "to_pydatetime") else last
+    return now - last
+
+
+def _is_stale(window: pd.DataFrame, timeframe: str, now: Optional[datetime] = None) -> bool:
+    """True when the newest bar is too old to safely trade on."""
+    minutes = TIMEFRAME_MINUTES.get(timeframe.upper(), 60)
+    period = timedelta(minutes=minutes)
+    return _bar_age(window, now) > max(STALE_FLOOR, 3 * period)
+
+
+def _print_mt5_status(symbol: str) -> None:
+    """Read-only connection preflight: surface a disconnected terminal loudly."""
+    try:
+        from services.data_service.mt5_data import connect_to_mt5, mt5 as _mt5
+        connect_to_mt5()
+        ti = _mt5.terminal_info() if _mt5 is not None else None
+    except Exception as exc:  # noqa: BLE001 — never block the loop on a preflight
+        print(f"  MT5 status: check failed ({type(exc).__name__}: {exc})")
+        return
+    if ti is None:
+        print("  MT5 status: MetaTrader5 package unavailable")
+        return
+    connected = getattr(ti, "connected", None)
+    trade_allowed = getattr(ti, "trade_allowed", None)
+    print(f"  MT5 status: connected={connected} trade_allowed={trade_allowed}")
+    if connected is False:
+        print("  WARNING: terminal is NOT connected to the broker — bars will be "
+              "stale until you log in / restore the feed.")
 
 
 def _seconds_to_next_bar(timeframe: str) -> float:
@@ -287,7 +332,8 @@ def parse_args(argv=None):
                    help="seconds to sleep between ticks (0 = align to the bar for mt5)")
     p.add_argument("--warmup", type=int, default=80, help="bars before the first decision (sample replay)")
     p.add_argument("--lookback", type=int, default=64, help="min candles the AI needs")
-    p.add_argument("--mt5-days", type=int, default=30, help="lookback days for --source mt5")
+    p.add_argument("--mt5-days", type=int, default=30,
+                   help="(deprecated/unused) the live poll now fetches the latest N bars by position")
     p.add_argument("--risk-pct", type=float, default=None,
                    help="percent of balance to risk per trade (default: risk.yaml limit)")
     p.add_argument("--volume", type=float, default=None, help="fixed lot size (omit to risk-size)")
@@ -423,15 +469,21 @@ def _run_sample(args, trader, decider, mode) -> int:
 
 def _run_live_poll(args, trader, decider, mode) -> int:
     """Poll the most-recent real candle each bar and act on it."""
+    _print_mt5_status(args.symbol)
     tick = 0
     n = max(args.lookback + 50, 200)
     while True:
         tick += 1
-        window = _fetch_mt5_window(args.symbol, args.timeframe, n, args.mt5_days)
+        window = _fetch_mt5_window(args.symbol, args.timeframe, n)
         ts = window["timestamp"].iloc[-1] if "timestamp" in window.columns else datetime.now()
         now = ts.to_pydatetime() if hasattr(ts, "to_pydatetime") else ts
         print(f"\n  tick {tick}  latest bar {now:%Y-%m-%d %H:%M}  close={float(window['close'].iloc[-1]):.5f}")
-        _run_one(trader, mode, window, now)
+        if _is_stale(window, args.timeframe):
+            hrs = _bar_age(window).total_seconds() / 3600.0
+            print(f"  STALE DATA: newest bar is {hrs:.1f}h old — terminal likely "
+                  f"disconnected or {args.symbol} not streaming; skipping tick (no decision)")
+        else:
+            _run_one(trader, mode, window, now)
         if args.once or (args.max_ticks and tick >= args.max_ticks):
             break
         wait = args.interval if args.interval > 0 else _seconds_to_next_bar(args.timeframe)
