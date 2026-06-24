@@ -49,6 +49,7 @@ class AIDecider:
         require_validation: bool = True,
         stop_fraction: float = 0.01,
         reward_ratio: float = 2.0,
+        validate_bars: int = 600,
         lookback: int = 64,
         max_iterations: int = DEFAULT_MAX_ITERATIONS,
         name: str = "ai_brain",
@@ -63,6 +64,11 @@ class AIDecider:
         self.require_validation = require_validation
         self.stop_fraction = stop_fraction
         self.reward_ratio = reward_ratio
+        # Bars the deterministic validation gate runs on. The default (600) is
+        # too shallow to clear the validator's 100-trade gate for most adapters
+        # (~52 in-sample trades), so a strategy can never validate and the loop
+        # always holds. Pass a deeper window (~4000+) to make trades reachable.
+        self.validate_bars = max(int(validate_bars), 1)
         self.lookback = max(int(lookback), 1)
         self.max_iterations = max_iterations
         self.name = name
@@ -162,7 +168,8 @@ class AIDecider:
         """Deterministic approval gate: only validated strategies may trade."""
         try:
             report = validate_strategy(
-                strategy, symbol=self.symbol, timeframe=self.timeframe, source=self.source
+                strategy, symbol=self.symbol, timeframe=self.timeframe,
+                n=self.validate_bars, source=self.source,
             )
         except Exception:  # noqa: BLE001 — unknown/invalid strategy ⇒ not approved
             return False
@@ -233,7 +240,9 @@ class AIDecider:
             f"Use source='{self.source}' for ALL data tools so you reason on the "
             f"right market data. Research recent price action and features, then "
             f"backtest, score and VALIDATE one or more candidate strategy adapters "
-            f"on {self.symbol}/{self.timeframe}; only trust a validated strategy.\n\n"
+            f"on {self.symbol}/{self.timeframe}; only trust a validated strategy.\n"
+            f"When you backtest/validate, pass n={self.validate_bars} (the gate needs "
+            f"≥100 trades, so a shallow window will spuriously fail validation).\n\n"
             f"Then call submit_decision with your final move:\n"
             f"- action='open' (with side, the strategy name, and absolute stop_loss "
             f"and take_profit prices) only if the evidence clearly supports a trade;\n"

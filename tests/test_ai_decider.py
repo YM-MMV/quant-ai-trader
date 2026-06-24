@@ -51,6 +51,28 @@ def test_validation_gate_blocks_unvalidated_strategy():
     assert sig.side is SignalSide.NONE
 
 
+def test_validate_bars_is_forwarded_to_the_gate(monkeypatch):
+    # The depth control must reach the deterministic gate, else it re-validates
+    # at the shallow default (600) and the 100-trade gate blocks every trade.
+    captured: dict = {}
+
+    def fake_validate(strategy, **kwargs):
+        captured["strategy"] = strategy
+        captured.update(kwargs)
+        return {"approved": True}
+
+    monkeypatch.setattr("apps.agent.ai_decider.validate_strategy", fake_validate)
+    dec = _decider(
+        {"action": "open", "side": "buy", "strategy": "rsi_pattern", "rationale": "x"},
+        require_validation=True, validate_bars=5000,
+    )
+    sig = dec.generate_signal(WIN)
+    assert captured["strategy"] == "rsi_pattern"
+    assert captured["n"] == 5000          # depth forwarded, not the 600 default
+    assert captured["source"] == "sample"
+    assert sig.is_actionable              # approved gate ⇒ the signal goes through
+
+
 def test_decider_fails_safe_on_model_error():
     def boom(**k):
         raise RuntimeError("model down")

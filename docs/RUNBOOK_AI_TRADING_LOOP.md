@@ -103,6 +103,7 @@ next tick reports the open position (and closes it on a `close` decision).
 | `--mode paper\|demo\|live` | Routing target. demo/live require the locks above. |
 | `--once` / `--max-ticks N` | One decision / stop after N ticks (0 = run forever). |
 | `--interval S` | Seconds between ticks (0 = align to the bar close for mt5). |
+| `--validate-bars N` | Bars the deterministic validation gate runs on (default 600). The validator needs **≥100 trades**, so 600 rarely validates anything — pass **~4000+** (best on **M15/M30**, where that's only ~40–80 days of history) to make a real AI trade reachable. |
 | `--risk-pct` / `--volume` | Risk-budget the lot size, or fix it. |
 | `--mock-ai` (+ `--mock-action`, `--mock-strategy`) | Offline brain for tests/demos. |
 | `--assume-approved` | Skip the AI's validation gate (DEMO ONLY; the risk gate still runs). |

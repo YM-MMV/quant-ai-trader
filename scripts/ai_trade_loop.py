@@ -332,6 +332,10 @@ def parse_args(argv=None):
                    help="seconds to sleep between ticks (0 = align to the bar for mt5)")
     p.add_argument("--warmup", type=int, default=80, help="bars before the first decision (sample replay)")
     p.add_argument("--lookback", type=int, default=64, help="min candles the AI needs")
+    p.add_argument("--validate-bars", type=int, default=600,
+                   help="bars the deterministic validation gate runs on; the validator "
+                        "needs >=100 trades, so the 600 default rarely validates -- pass "
+                        "~4000+ (esp. on M15/M30) to make a real trade reachable")
     p.add_argument("--mt5-days", type=int, default=30,
                    help="(deprecated/unused) the live poll now fetches the latest N bars by position")
     p.add_argument("--risk-pct", type=float, default=None,
@@ -387,6 +391,7 @@ def main(argv=None) -> int:
     decider = AIDecider(
         symbol=args.symbol, timeframe=args.timeframe, client=client, source=args.source,
         risk_pct=risk_pct, require_validation=not args.assume_approved,
+        validate_bars=args.validate_bars,
         lookback=args.lookback, max_iterations=args.max_iterations,
         on_event=lambda kind, data: print(f"    - {kind}: {data.get('name', data)}"),
     )
