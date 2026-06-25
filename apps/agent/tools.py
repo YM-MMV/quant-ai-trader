@@ -68,7 +68,7 @@ StrategyRef = Union[str, Strategy]
 # Candle sources the research tools accept. ``sample`` is deterministic/offline
 # (the safe default that keeps tests reproducible); ``mt5`` pulls *real* candles
 # from a running MetaTrader 5 terminal so the AI can reason over live market data.
-CandleSource = str  # "sample" | "mt5"
+CandleSource = str  # "sample" | "mt5" | "local"
 
 
 # --------------------------------------------------------------------------- #
@@ -114,13 +114,18 @@ def _candle_frame(
     ``source="sample"`` (default) returns deterministic offline candles — the
     safe, reproducible path used by tests and demos. ``source="mt5"`` returns
     real, recent candles from a running MetaTrader 5 terminal (data only).
+    ``source="local"`` returns candles resampled from the local pricer tick dump
+    (see ``services.data_service.local_data``) — deep history for validation.
     """
     if n <= 0:
         raise ValueError("n must be positive")
     if source == "mt5":
         return _mt5_candle_frame(symbol, timeframe, n)
+    if source == "local":
+        from services.data_service.local_data import load_local_candles
+        return load_local_candles(symbol, timeframe, n)
     if source != "sample":
-        raise ValueError(f"unknown candle source {source!r}; use 'sample' or 'mt5'")
+        raise ValueError(f"unknown candle source {source!r}; use 'sample', 'mt5', or 'local'")
     return generate_candles(symbol, timeframe, n=n, seed=seed)
 
 

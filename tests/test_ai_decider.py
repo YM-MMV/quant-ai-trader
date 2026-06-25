@@ -73,6 +73,24 @@ def test_validate_bars_is_forwarded_to_the_gate(monkeypatch):
     assert sig.is_actionable              # approved gate ⇒ the signal goes through
 
 
+def test_validate_source_overrides_source_for_the_gate(monkeypatch):
+    # Live decisions read `source` (e.g. mt5) but the gate validates on
+    # `validate_source` (e.g. deep local history) — they must not be conflated.
+    captured: dict = {}
+
+    def fake_validate(strategy, **kwargs):
+        captured.update(kwargs)
+        return {"approved": True}
+
+    monkeypatch.setattr("apps.agent.ai_decider.validate_strategy", fake_validate)
+    dec = _decider(
+        {"action": "open", "side": "buy", "strategy": "rsi_pattern", "rationale": "x"},
+        require_validation=True, source="mt5", validate_source="local",
+    )
+    dec.generate_signal(WIN)
+    assert captured["source"] == "local"   # not "mt5"
+
+
 def test_decider_fails_safe_on_model_error():
     def boom(**k):
         raise RuntimeError("model down")

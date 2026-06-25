@@ -93,17 +93,49 @@ next tick reports the open position (and closes it on a `close` decision).
 > ⚠️ Reconfirm the account is a **demo** before any `--mode demo`/`live` run. The
 > same code path would trade a funded account if the terminal were logged into one.
 
+## 6. Deep history for validation (`local` source)
+
+The broker's terminal only serves a shallow window of intraday history (~12 days
+on the FTWorldwide demo), which is far too few trades to clear the validator's
+**100-trade gate** — so strategies never validate and the loop always holds.
+Feed it a deeper local dataset instead.
+
+Drop an external **pricer tick dump** (per-day `<SYMBOL>_YYYY_MM_DD.parquet` with
+`time`/`bid`/`ask`) in a folder, then resample it once into the candle store:
+
+```powershell
+python scripts/ingest_pricer_history.py --tick-dir pricer-output-2026-05-11_2026-06-10 `
+    --symbols XAUUSD --timeframes M5 M15 M30 H1
+# -> data/historical/XAUUSD/<tf>.parquet  (git-ignored; never committed)
+```
+
+Then either validate **offline** against it, or **trade live while validating on it**:
+
+```powershell
+# Offline AI backtest over the local history
+python scripts/ai_trade_loop.py --symbol XAUUSD --timeframe M15 --source local --validate-bars 4000
+
+# Live demo data, but the gate validates on deep local history
+python scripts/ai_trade_loop.py --symbol XAUUSD --timeframe M15 --source mt5 `
+    --validate-source local --validate-bars 4000 --mode demo
+```
+
+> The tick dump and resampled candles are **large** (tens of GB) and git-ignored
+> (`*.parquet`, `pricer-output-*/`, `data/historical/`) — keep them local, never
+> commit them (see the note in this runbook's repo).
+
 ---
 
 ## Key flags
 
 | Flag | Meaning |
 |------|---------|
-| `--source sample\|mt5` | Offline deterministic candles vs real terminal data. |
+| `--source sample\|mt5\|local` | Offline deterministic candles, real terminal data, or **deep local history** resampled from the pricer tick dump (see §6). |
+| `--validate-source …` | Data source for the validation gate + the AI's backtests (default: same as `--source`). Use `--source mt5 --validate-source local` to **trade live data but validate on deep history**. |
 | `--mode paper\|demo\|live` | Routing target. demo/live require the locks above. |
 | `--once` / `--max-ticks N` | One decision / stop after N ticks (0 = run forever). |
 | `--interval S` | Seconds between ticks (0 = align to the bar close for mt5). |
-| `--validate-bars N` | Bars the deterministic validation gate runs on (default 600). The validator needs **≥100 trades**, so 600 rarely validates anything — pass **~4000+** (best on **M15/M30**, where that's only ~40–80 days of history) to make a real AI trade reachable. |
+| `--validate-bars N` | Bars the deterministic validation gate runs on (default 600). The validator needs **≥100 trades**, so 600 rarely validates anything — pass **~4000+** (best on **M15/M30**) to make a real AI trade reachable. |
 | `--risk-pct` / `--volume` | Risk-budget the lot size, or fix it. |
 | `--mock-ai` (+ `--mock-action`, `--mock-strategy`) | Offline brain for tests/demos. |
 | `--assume-approved` | Skip the AI's validation gate (DEMO ONLY; the risk gate still runs). |

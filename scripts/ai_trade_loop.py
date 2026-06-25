@@ -323,8 +323,13 @@ def parse_args(argv=None):
     p = argparse.ArgumentParser(description="Always-on, AI-driven trading loop.")
     p.add_argument("--symbol", default="XAUUSD")
     p.add_argument("--timeframe", default="H1")
-    p.add_argument("--source", choices=["sample", "mt5"], default="sample",
-                   help="market data for the AI: 'mt5' = real terminal candles")
+    p.add_argument("--source", choices=["sample", "mt5", "local"], default="sample",
+                   help="market data for the AI: 'mt5' = real terminal candles, "
+                        "'local' = resampled candles from the pricer tick dump (offline replay)")
+    p.add_argument("--validate-source", choices=["sample", "mt5", "local"], default=None,
+                   help="data source for the validation gate + the AI's backtests "
+                        "(default: same as --source). Use 'local' with --source mt5 to "
+                        "validate on deep history while trading live data")
     p.add_argument("--mode", choices=["paper", "demo", "live"], default="paper")
     p.add_argument("--once", action="store_true", help="run a single decision then exit")
     p.add_argument("--max-ticks", type=int, default=0, help="stop after N ticks (0 = run forever)")
@@ -390,6 +395,7 @@ def main(argv=None) -> int:
     client = _build_client(args, settings)
     decider = AIDecider(
         symbol=args.symbol, timeframe=args.timeframe, client=client, source=args.source,
+        validate_source=args.validate_source,
         risk_pct=risk_pct, require_validation=not args.assume_approved,
         validate_bars=args.validate_bars,
         lookback=args.lookback, max_iterations=args.max_iterations,
@@ -439,7 +445,7 @@ def main(argv=None) -> int:
 
     # --- run --------------------------------------------------------------- #
     try:
-        if args.source == "sample":
+        if args.source in ("sample", "local"):
             return _run_sample(args, trader, decider, mode)
         return _run_live_poll(args, trader, decider, mode)
     except KeyboardInterrupt:
@@ -454,13 +460,18 @@ def _run_one(trader, mode, window, now) -> None:
 
 
 def _run_sample(args, trader, decider, mode) -> int:
-    """Deterministic offline replay over generated candles (tests / dry runs)."""
+    """Offline replay over a candle series (generated 'sample' or 'local' history)."""
     ticks = 1 if args.once else (args.max_ticks or 50)
     n = max(args.warmup + ticks + args.lookback + 10, 200)
-    series = generate_candles(symbol=args.symbol, timeframe=args.timeframe, n=n, seed=args.seed)
+    if args.source == "local":
+        from services.data_service.local_data import load_local_candles
+        series = load_local_candles(args.symbol, args.timeframe, n)
+        print(f"  local replay: {len(series)} bars from the pricer history store")
+    else:
+        series = generate_candles(symbol=args.symbol, timeframe=args.timeframe, n=n, seed=args.seed)
     start = max(args.warmup, args.lookback)
     end = min(len(series), start + ticks)
-    print(f"  sample replay: bars {start}..{end} ({end - start} ticks)\n")
+    print(f"  replay: bars {start}..{end} ({end - start} ticks)\n")
     for i in range(start, end):
         window = series.iloc[: i + 1]
         ts = window["timestamp"].iloc[-1]

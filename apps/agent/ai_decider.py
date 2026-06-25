@@ -32,7 +32,7 @@ from apps.agent.llm_runner import (
 from apps.agent.tools import validate_strategy
 from services.strategy_service.base import AdapterMetadata, AdapterSignal, SignalSide
 
-CandleSource = str  # "sample" | "mt5"
+CandleSource = str  # "sample" | "mt5" | "local"
 
 
 class AIDecider:
@@ -45,6 +45,7 @@ class AIDecider:
         timeframe: str,
         client: LLMClient,
         source: CandleSource = "sample",
+        validate_source: Optional[CandleSource] = None,
         risk_pct: float = 1.0,
         require_validation: bool = True,
         stop_fraction: float = 0.01,
@@ -60,6 +61,11 @@ class AIDecider:
         self.timeframe = timeframe
         self.client = client
         self.source = source
+        # Where the deterministic gate + the AI's backtests get their candles.
+        # Defaults to ``source`` but can point at deep local history (``local``)
+        # while live decisions still read ``source`` (e.g. mt5) — the broker's
+        # shallow intraday history can't satisfy the validator's trade-count gate.
+        self.validate_source = validate_source or source
         self.risk_pct = risk_pct
         self.require_validation = require_validation
         self.stop_fraction = stop_fraction
@@ -169,7 +175,7 @@ class AIDecider:
         try:
             report = validate_strategy(
                 strategy, symbol=self.symbol, timeframe=self.timeframe,
-                n=self.validate_bars, source=self.source,
+                n=self.validate_bars, source=self.validate_source,
             )
         except Exception:  # noqa: BLE001 — unknown/invalid strategy ⇒ not approved
             return False
@@ -237,10 +243,13 @@ class AIDecider:
             f"{pos_line}\n"
             f"Account balance: {self.account_balance:,.2f}. "
             f"Risk budget: up to {self.risk_pct:.2f}% of balance per trade.\n\n"
-            f"Use source='{self.source}' for ALL data tools so you reason on the "
-            f"right market data. Research recent price action and features, then "
-            f"backtest, score and VALIDATE one or more candidate strategy adapters "
-            f"on {self.symbol}/{self.timeframe}; only trust a validated strategy.\n"
+            f"Use source='{self.source}' for current market data (get_candles, "
+            f"get_market_features, get_kronos_prediction) so you reason on the right "
+            f"prices. Use source='{self.validate_source}' for run_backtest, "
+            f"score_backtest and validate_strategy (deeper history). Research recent "
+            f"price action and features, then backtest, score and VALIDATE one or more "
+            f"candidate strategy adapters on {self.symbol}/{self.timeframe}; only trust "
+            f"a validated strategy.\n"
             f"When you backtest/validate, pass n={self.validate_bars} (the gate needs "
             f"≥100 trades, so a shallow window will spuriously fail validation).\n\n"
             f"Then call submit_decision with your final move:\n"
