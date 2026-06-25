@@ -136,6 +136,8 @@ python scripts/ai_trade_loop.py --symbol XAUUSD --timeframe M15 --source mt5 `
 | `--once` / `--max-ticks N` | One decision / stop after N ticks (0 = run forever). |
 | `--interval S` | Seconds between ticks (0 = align to the bar close for mt5). |
 | `--validate-bars N` | Bars the deterministic validation gate runs on (default 600). The validator needs **≥100 trades**, so 600 rarely validates anything — pass **~4000+** (best on **M15/M30**) to make a real AI trade reachable. |
+| `--min-trades N` | Override the validator's minimum-trades gate (validator default 100; **loop default 30**). Lower accepts strategies on less data — **weaker statistical confidence** (trades away Sharpe rigor). |
+| `--force-position` | **DEMO/PAPER ONLY** (refused on `--mode live`): when nothing validates, trade the best-scoring adapter that currently signals, logged **UNVALIDATED**. The RiskManager still gates the order. Expect losses if there's no real edge. |
 | `--risk-pct` / `--volume` | Risk-budget the lot size, or fix it. |
 | `--mock-ai` (+ `--mock-action`, `--mock-strategy`) | Offline brain for tests/demos. |
 | `--assume-approved` | Skip the AI's validation gate (DEMO ONLY; the risk gate still runs). |

@@ -51,6 +51,8 @@ class AIDecider:
         stop_fraction: float = 0.01,
         reward_ratio: float = 2.0,
         validate_bars: int = 600,
+        min_trades: Optional[int] = None,
+        force_position: bool = False,
         lookback: int = 64,
         max_iterations: int = DEFAULT_MAX_ITERATIONS,
         name: str = "ai_brain",
@@ -75,6 +77,12 @@ class AIDecider:
         # (~52 in-sample trades), so a strategy can never validate and the loop
         # always holds. Pass a deeper window (~4000+) to make trades reachable.
         self.validate_bars = max(int(validate_bars), 1)
+        # Override the validator's minimum-trades gate (None = its default, 100).
+        self.min_trades = min_trades
+        # DEMO/PAPER fallback: if nothing validates, trade the best-scoring
+        # applicable adapter that currently signals (UNVALIDATED). The caller
+        # (the loop) must keep this off for live trading.
+        self.force_position = bool(force_position)
         self.lookback = max(int(lookback), 1)
         self.max_iterations = max_iterations
         self.name = name
@@ -132,7 +140,18 @@ class AIDecider:
             )
             self.last_run = run
             self.last_decision = run.decision
-            return self._to_signal(run.decision, window)
+            signal = self._to_signal(run.decision, window)
+            # DEMO/PAPER force fallback: nothing validated and the AI isn't
+            # closing -> trade the best-scoring live candidate anyway (unvalidated).
+            if (
+                self.force_position
+                and not signal.is_actionable
+                and not run.decision.is_close
+            ):
+                forced = self._forced_signal(window)
+                if forced.is_actionable:
+                    return forced
+            return signal
         except Exception as exc:  # noqa: BLE001 — abstain on any failure
             self.last_decision = AgentDecision.hold(f"decider error: {type(exc).__name__}: {exc}")
             return self._none(self.last_decision.rationale)
@@ -176,10 +195,63 @@ class AIDecider:
             report = validate_strategy(
                 strategy, symbol=self.symbol, timeframe=self.timeframe,
                 n=self.validate_bars, source=self.validate_source,
+                min_trades=self.min_trades,
             )
         except Exception:  # noqa: BLE001 — unknown/invalid strategy ⇒ not approved
             return False
         return bool(report.get("approved", False))
+
+    def _forced_signal(self, window: pd.DataFrame) -> AdapterSignal:
+        """DEMO/PAPER fallback when nothing validates: trade the best-scoring
+        applicable adapter that currently signals BUY/SELL (UNVALIDATED).
+
+        Ranks only the adapters with a *live* actionable signal on this bar by
+        their backtest score, and returns the top one's direction. Returns NONE
+        if no adapter currently signals — there is no position to force from
+        nothing. The RiskManager still gates the resulting order downstream.
+        """
+        from apps.agent.tools import _adapter_registry, run_backtest, score_backtest
+
+        registry = _adapter_registry()
+        best: Optional[tuple[float, AdapterSignal, str]] = None
+        for name in registry.names():
+            try:
+                adapter = registry.get(name)
+                if not adapter.supports_timeframe(self.timeframe):
+                    continue
+                sig = adapter.generate_signal(window)
+                if not sig.is_actionable:
+                    continue
+                bt = run_backtest(
+                    name, symbol=self.symbol, timeframe=self.timeframe,
+                    n=self.validate_bars, source=self.validate_source,
+                    stop_fraction=self.stop_fraction, reward_ratio=self.reward_ratio,
+                )
+                score = float(score_backtest(bt).get("score", 0.0))
+            except Exception:  # noqa: BLE001 — a bad adapter must not break the fallback
+                continue
+            if best is None or score > best[0]:
+                best = (score, sig, name)
+
+        if best is None:
+            return self._none("forced: no applicable adapter has a live signal to take")
+
+        score, sig, name = best
+        side = SignalSide.BUY if sig.side is SignalSide.BUY else SignalSide.SELL
+        close = float(window["close"].iloc[-1])
+        sl, tp = self._levels(side, close, sig.suggested_stop_loss, sig.suggested_take_profit)
+        return AdapterSignal(
+            side=side,
+            confidence=score,
+            reason=f"FORCED (UNVALIDATED): best live candidate {name!r} by score={score:.2f}",
+            suggested_stop_loss=sl,
+            suggested_take_profit=tp,
+            risk_notes=["forced_unvalidated", f"score={score:.2f}", f"basis={name}"],
+            source_strategy=name,
+            adapter_version=self.version,
+            symbol=self.symbol,
+            timeframe=self.timeframe,
+        )
 
     def _levels(
         self, side: SignalSide, close: float, sl: Optional[float], tp: Optional[float]

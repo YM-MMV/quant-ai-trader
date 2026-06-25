@@ -184,6 +184,13 @@ def test_validate_strategy_returns_report():
     assert rep["strategy_id"] == "macd_oscillator"
 
 
+def test_validate_strategy_min_trades_override():
+    # The min_trades override must lower the minimum-trades gate threshold.
+    rep = t.validate_strategy("macd_oscillator", "EURUSD", "H1", 400, min_trades=5)
+    rule = next(r for r in rep["results"] if r["name"] == "minimum_trades")
+    assert rule["threshold"] == 5
+
+
 # --------------------------------------------------------------------------- #
 # Proposal / risk / paper execution
 # --------------------------------------------------------------------------- #

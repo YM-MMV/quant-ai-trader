@@ -39,6 +39,7 @@ from services.backtest_service.simple_backtester import (
     Strategy,
 )
 from services.backtest_service.strategy_validator import (
+    StrategyValidationConfig,
     StrategyValidator,
     build_validation_input,
 )
@@ -422,10 +423,13 @@ def validate_strategy(
     stop_fraction: float = 0.01,
     reward_ratio: float = 2.0,
     source: CandleSource = "sample",
+    min_trades: Optional[int] = None,
 ) -> dict[str, Any]:
     """Run the approval gates against a strategy's in/out-of-sample backtests.
 
-    ``source="mt5"`` validates on real, recent terminal candles.
+    ``source="mt5"`` validates on real, recent terminal candles. ``min_trades``
+    overrides the validator's minimum-trades gate (default 100) — lower it to
+    accept a strategy on less history (weaker statistical confidence).
     """
     df = _candle_frame(symbol, timeframe, n, seed=seed, source=source)
     split = int(len(df) * (1.0 - out_of_sample_fraction))
@@ -435,7 +439,11 @@ def validate_strategy(
 
     data = build_validation_input(candles_in, fn, candles_out=candles_out)
     strategy_id = strategy if isinstance(strategy, str) else "callable"
-    report = StrategyValidator().validate(data, strategy_id=strategy_id)
+    validator = (
+        StrategyValidator(StrategyValidationConfig(minimum_trades=min_trades))
+        if min_trades is not None else StrategyValidator()
+    )
+    report = validator.validate(data, strategy_id=strategy_id)
     return report.model_dump(mode="json")
 
 

@@ -83,6 +83,13 @@ def test_demo_mode_refused_without_locks(capsys):
     assert "refused" in capsys.readouterr().out.lower()
 
 
+def test_force_position_refused_on_live(capsys):
+    # Forcing an unvalidated trade must never be allowed on a live account.
+    rc = main(["--once", "--source", "sample", "--mock-ai", "--mode", "live", "--force-position"])
+    assert rc == 3
+    assert "force-position" in capsys.readouterr().out.lower()
+
+
 def _bar(ts: datetime) -> pd.DataFrame:
     return pd.DataFrame({"timestamp": [pd.Timestamp(ts)], "close": [1.0]})
 

@@ -91,6 +91,60 @@ def test_validate_source_overrides_source_for_the_gate(monkeypatch):
     assert captured["source"] == "local"   # not "mt5"
 
 
+def test_min_trades_is_forwarded_to_the_gate(monkeypatch):
+    captured: dict = {}
+
+    def fake_validate(strategy, **kwargs):
+        captured.update(kwargs)
+        return {"approved": True}
+
+    monkeypatch.setattr("apps.agent.ai_decider.validate_strategy", fake_validate)
+    dec = _decider(
+        {"action": "open", "side": "buy", "strategy": "rsi_pattern", "rationale": "x"},
+        require_validation=True, min_trades=15,
+    )
+    dec.generate_signal(WIN)
+    assert captured["min_trades"] == 15
+
+
+def test_force_position_trades_best_candidate_when_ai_holds(monkeypatch):
+    # AI holds, but force_position takes the best-scoring live candidate.
+    from services.strategy_service.base import AdapterSignal
+
+    class _FakeAdapter:
+        def supports_timeframe(self, tf):
+            return True
+
+        def generate_signal(self, window):
+            return AdapterSignal(
+                side=SignalSide.BUY, reason="live buy", source_strategy="fake",
+                adapter_version="1", symbol="XAUUSD", timeframe="H1",
+            )
+
+    class _FakeRegistry:
+        def names(self):
+            return ["fake"]
+
+        def get(self, name):
+            return _FakeAdapter()
+
+    monkeypatch.setattr("apps.agent.tools._adapter_registry", lambda: _FakeRegistry())
+    monkeypatch.setattr("apps.agent.tools.run_backtest", lambda *a, **k: {"metrics": {}})
+    monkeypatch.setattr("apps.agent.tools.score_backtest", lambda bt: {"score": 0.7})
+
+    dec = _decider({"action": "hold", "rationale": "flat"},
+                   require_validation=False, force_position=True)
+    sig = dec.generate_signal(WIN)
+    assert sig.is_actionable and sig.side is SignalSide.BUY
+    assert "FORCED" in sig.reason
+
+
+def test_force_position_off_keeps_hold():
+    # Default (no force): a hold stays a non-actionable NONE.
+    dec = _decider({"action": "hold", "rationale": "flat"}, require_validation=False)
+    assert dec.generate_signal(WIN).side is SignalSide.NONE
+
+
 def test_decider_fails_safe_on_model_error():
     def boom(**k):
         raise RuntimeError("model down")

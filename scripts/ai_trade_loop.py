@@ -341,6 +341,13 @@ def parse_args(argv=None):
                    help="bars the deterministic validation gate runs on; the validator "
                         "needs >=100 trades, so the 600 default rarely validates -- pass "
                         "~4000+ (esp. on M15/M30) to make a real trade reachable")
+    p.add_argument("--min-trades", type=int, default=30,
+                   help="override the validator's minimum-trades gate (validator default 100). "
+                        "Lower accepts strategies on less data -- weaker statistical confidence")
+    p.add_argument("--force-position", action="store_true",
+                   help="DEMO/PAPER ONLY (refused on --mode live): if nothing validates, trade "
+                        "the best-scoring adapter that currently signals (logged UNVALIDATED; "
+                        "the RiskManager still gates it)")
     p.add_argument("--mt5-days", type=int, default=30,
                    help="(deprecated/unused) the live poll now fetches the latest N bars by position")
     p.add_argument("--risk-pct", type=float, default=None,
@@ -387,6 +394,13 @@ def main(argv=None) -> int:
     if args.symbol not in allowlist:
         allowlist = (args.symbol, *allowlist)
 
+    # Hard safety guard: forcing an unvalidated trade is for paper/demo only.
+    if args.force_position and args.mode == "live":
+        print("  REFUSED: --force-position is paper/demo only and must never trade an "
+              "unvalidated position on a live (real-money) account. Exiting.")
+        return 3
+    force_position = args.force_position and args.mode != "live"
+
     print("=" * 72)
     print(f" AI TRADE LOOP  symbol={args.symbol} {args.timeframe}  mode={args.mode}  "
           f"source={args.source}  brain={'mock' if args.mock_ai else settings.ai_model}")
@@ -397,12 +411,19 @@ def main(argv=None) -> int:
         symbol=args.symbol, timeframe=args.timeframe, client=client, source=args.source,
         validate_source=args.validate_source,
         risk_pct=risk_pct, require_validation=not args.assume_approved,
-        validate_bars=args.validate_bars,
+        validate_bars=args.validate_bars, min_trades=args.min_trades,
+        force_position=force_position,
         lookback=args.lookback, max_iterations=args.max_iterations,
         on_event=lambda kind, data: print(f"    - {kind}: {data.get('name', data)}"),
     )
     if args.assume_approved:
         print("  validation gate: SKIPPED (DEMO ONLY) - strategy_approved forced True")
+    if args.min_trades != 100:
+        print(f"  validation gate: minimum_trades lowered to {args.min_trades} "
+              f"(weaker statistical confidence)")
+    if force_position:
+        print("  force-position: ON (DEMO/PAPER only) - will trade the best-scoring "
+              "candidate when nothing validates; such trades are logged UNVALIDATED")
 
     # --- mode / gateway pre-flight ---------------------------------------- #
     mode = TradingMode.PAPER if args.mode == "paper" else TradingMode.LIVE
