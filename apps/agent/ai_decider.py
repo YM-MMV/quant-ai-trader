@@ -135,6 +135,7 @@ class AIDecider:
             run = run_decision(
                 task,
                 client=self.client,
+                dispatch=self._research_dispatch(),
                 max_iterations=self.max_iterations,
                 on_event=self.on_event,
             )
@@ -157,6 +158,51 @@ class AIDecider:
             return self._none(self.last_decision.rationale)
 
     # -- internals --------------------------------------------------------- #
+    def _research_dispatch(self):
+        """Bind this run's symbol/timeframe/source/depth/min-trades onto the AI's
+        data + backtest + validation tools.
+
+        The model calls those tools with its own arguments; left to defaults it
+        would research the wrong symbol, a shallow window, or the 100-trade gate
+        — so its conclusions would diverge from the deterministic gate and from
+        ``--min-trades`` / ``--validate-bars`` / ``--validate-source``. We inject
+        the configured values (only the params each tool actually accepts), so
+        the flags are authoritative no matter what the model passes.
+        """
+        import inspect
+
+        from apps.agent.tools import get_tool
+
+        live = {"symbol": self.symbol, "timeframe": self.timeframe, "source": self.source}
+        research = {
+            "symbol": self.symbol, "timeframe": self.timeframe,
+            "source": self.validate_source, "n": self.validate_bars,
+            "min_trades": self.min_trades,
+        }
+        overrides = {
+            "get_candles": live,
+            "get_market_features": live,
+            "get_kronos_prediction": live,
+            "run_backtest": research,
+            "validate_strategy": research,
+        }
+
+        def dispatch(name: str):
+            fn = get_tool(name)
+            ov = overrides.get(name)
+            if not ov:
+                return fn
+            params = inspect.signature(fn).parameters
+            inject = {k: v for k, v in ov.items() if v is not None and k in params}
+
+            def wrapped(**kwargs):
+                merged = {**kwargs, **inject}
+                return fn(**merged)
+
+            return wrapped
+
+        return dispatch
+
     def _to_signal(self, decision: AgentDecision, window: pd.DataFrame) -> AdapterSignal:
         if not decision.is_open:
             # 'hold' and 'close' are non-entries here; the loop handles 'close'
@@ -233,20 +279,34 @@ class AIDecider:
             if best is None or score > best[0]:
                 best = (score, sig, name)
 
-        if best is None:
-            return self._none("forced: no applicable adapter has a live signal to take")
-
-        score, sig, name = best
-        side = SignalSide.BUY if sig.side is SignalSide.BUY else SignalSide.SELL
         close = float(window["close"].iloc[-1])
-        sl, tp = self._levels(side, close, sig.suggested_stop_loss, sig.suggested_take_profit)
+        if best is not None:
+            score, sig, name = best
+            side = SignalSide.BUY if sig.side is SignalSide.BUY else SignalSide.SELL
+            sl, tp = self._levels(side, close, sig.suggested_stop_loss, sig.suggested_take_profit)
+            reason = f"FORCED (UNVALIDATED): best live candidate {name!r} by score={score:.2f}"
+            notes = ["forced_unvalidated", f"score={score:.2f}", f"basis={name}"]
+        else:
+            # No adapter signals on this bar — still take a position (the point of
+            # --force-position): a simple momentum stance, close vs SMA(lookback).
+            closes = window["close"].astype(float)
+            if len(closes) < 2:
+                return self._none("forced: not enough data to take a position")
+            sma = float(closes.tail(min(len(closes), self.lookback)).mean())
+            side = SignalSide.BUY if close >= sma else SignalSide.SELL
+            sl, tp = self._levels(side, close, None, None)
+            reason = (f"FORCED (UNVALIDATED): no adapter signal; momentum stance "
+                      f"close={close:.5f} vs SMA={sma:.5f}")
+            notes = ["forced_unvalidated", "momentum_fallback"]
+            name = f"{self.name}_forced"
+
         return AdapterSignal(
             side=side,
-            confidence=score,
-            reason=f"FORCED (UNVALIDATED): best live candidate {name!r} by score={score:.2f}",
+            confidence=0.0,
+            reason=reason,
             suggested_stop_loss=sl,
             suggested_take_profit=tp,
-            risk_notes=["forced_unvalidated", f"score={score:.2f}", f"basis={name}"],
+            risk_notes=notes,
             source_strategy=name,
             adapter_version=self.version,
             symbol=self.symbol,

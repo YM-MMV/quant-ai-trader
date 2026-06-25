@@ -145,6 +145,61 @@ def test_force_position_off_keeps_hold():
     assert dec.generate_signal(WIN).side is SignalSide.NONE
 
 
+def test_force_position_momentum_fallback_when_nothing_signals(monkeypatch):
+    # No adapter signals -> force still takes a momentum position (its whole point).
+    from services.strategy_service.base import AdapterSignal
+
+    class _FlatAdapter:
+        def supports_timeframe(self, tf):
+            return True
+
+        def generate_signal(self, window):
+            return AdapterSignal(side=SignalSide.NONE, reason="flat", source_strategy="flat",
+                                 adapter_version="1", symbol="XAUUSD", timeframe="H1")
+
+    class _FlatRegistry:
+        def names(self):
+            return ["flat"]
+
+        def get(self, name):
+            return _FlatAdapter()
+
+    monkeypatch.setattr("apps.agent.tools._adapter_registry", lambda: _FlatRegistry())
+    dec = _decider({"action": "hold", "rationale": "flat"},
+                   require_validation=False, force_position=True)
+    sig = dec.generate_signal(WIN)
+    assert sig.is_actionable                       # always takes a side
+    assert "momentum" in sig.reason.lower()
+
+
+def test_research_dispatch_injects_run_config(monkeypatch):
+    # The AI's validate/backtest calls must use the run's config, not its own args.
+    import apps.agent.tools as tools
+    captured: dict = {}
+
+    def fake_validate(strategy, symbol=None, timeframe=None, n=None, source=None,
+                      min_trades=None, **kw):
+        captured.update(strategy=strategy, symbol=symbol, timeframe=timeframe,
+                        n=n, source=source, min_trades=min_trades)
+        return {"approved": True}
+
+    monkeypatch.setitem(tools.AGENT_TOOLS, "validate_strategy", fake_validate)
+    dec = AIDecider(
+        symbol="XAUUSD", timeframe="M15", client=_client({"action": "hold"}),
+        source="mt5", validate_source="local", validate_bars=4000, min_trades=25,
+        require_validation=False,
+    )
+    # The model passes wrong/default args; the dispatch overrides them.
+    dec._research_dispatch()("validate_strategy")(
+        strategy="rsi_pattern", symbol="EURUSD", timeframe="H1",
+        n=600, source="sample", min_trades=100,
+    )
+    assert captured == {
+        "strategy": "rsi_pattern", "symbol": "XAUUSD", "timeframe": "M15",
+        "n": 4000, "source": "local", "min_trades": 25,
+    }
+
+
 def test_decider_fails_safe_on_model_error():
     def boom(**k):
         raise RuntimeError("model down")
